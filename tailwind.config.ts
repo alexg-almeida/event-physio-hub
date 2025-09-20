@@ -58,6 +58,14 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      backgroundImage: {
+        'medical-gradient': 'var(--medical-gradient)',
+        'healing-gradient': 'var(--healing-gradient)',
+      },
+      boxShadow: {
+        'wellness': 'var(--wellness-shadow)',
+        'card-soft': 'var(--card-shadow)',
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
