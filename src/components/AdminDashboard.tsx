@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,55 +12,93 @@ import {
   CheckCircle, 
   XCircle,
   Download,
-  Eye
+  Eye,
+  QrCode,
+  DollarSign
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Registration {
   id: string;
-  nomeCompleto: string;
+  nome_completo: string;
   cpf: string;
   telefone: string;
-  status: "pendente" | "pago" | "cancelado";
-  dataInscricao: string;
-  valorPago?: number;
+  endereco: string;
+  lesoes?: string;
+  tratamento?: string;
+  status_pagamento: string;
+  data_inscricao: string;
+  valor_pago?: number;
+  codigo_validacao: string;
+  evento_id: string;
+}
+
+interface Evento {
+  id: string;
+  nome: string;
+  valor_inscricao: number;
 }
 
 const AdminDashboard = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Mock data - seria substituído por dados reais do backend
-  const mockRegistrations: Registration[] = [
-    {
-      id: "1",
-      nomeCompleto: "Maria Silva Santos",
-      cpf: "123.456.789-00",
-      telefone: "(11) 99999-9999",
-      status: "pago",
-      dataInscricao: "2024-01-15",
-      valorPago: 50.00
-    },
-    {
-      id: "2", 
-      nomeCompleto: "João Carlos Oliveira",
-      cpf: "987.654.321-00",
-      telefone: "(11) 88888-8888",
-      status: "pendente",
-      dataInscricao: "2024-01-16"
-    },
-    {
-      id: "3",
-      nomeCompleto: "Ana Paula Costa",
-      cpf: "456.789.123-00", 
-      telefone: "(11) 77777-7777",
-      status: "pago",
-      dataInscricao: "2024-01-17",
-      valorPago: 50.00
-    }
-  ];
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [evento, setEvento] = useState<Evento | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const filteredRegistrations = mockRegistrations.filter(reg =>
-    reg.nomeCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reg.cpf.includes(searchTerm)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Buscar evento ativo
+        const { data: eventoData, error: eventoError } = await supabase
+          .from('deller_eventos')
+          .select('id, nome, valor_inscricao')
+          .eq('status', 'ativo')
+          .single();
+
+        if (eventoError) {
+          console.error('Erro ao buscar evento:', eventoError);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar as informações do evento.",
+            variant: "destructive",
+          });
+        } else {
+          setEvento(eventoData);
+
+          // Buscar inscrições do evento
+          const { data: inscricoesData, error: inscricoesError } = await supabase
+            .from('deller_inscricoes')
+            .select('*')
+            .eq('evento_id', eventoData.id)
+            .order('created_at', { ascending: false });
+
+          if (inscricoesError) {
+            console.error('Erro ao buscar inscrições:', inscricoesError);
+            toast({
+              title: "Erro",
+              description: "Não foi possível carregar as inscrições.",
+              variant: "destructive",
+            });
+          } else {
+            setRegistrations(inscricoesData || []);
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [toast]);
+  
+  const filteredRegistrations = registrations.filter(reg =>
+    reg.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    reg.cpf.includes(searchTerm) ||
+    reg.telefone.includes(searchTerm)
   );
 
   const getStatusBadge = (status: string) => {
@@ -71,19 +109,32 @@ const AdminDashboard = () => {
         return <Badge variant="secondary">Pendente</Badge>;
       case "cancelado":
         return <Badge variant="destructive">Cancelado</Badge>;
+      case "expirado":
+        return <Badge variant="outline">Expirado</Badge>;
       default:
         return <Badge variant="outline">Desconhecido</Badge>;
     }
   };
 
   const stats = {
-    total: mockRegistrations.length,
-    pagos: mockRegistrations.filter(r => r.status === "pago").length,
-    pendentes: mockRegistrations.filter(r => r.status === "pendente").length,
-    receita: mockRegistrations
-      .filter(r => r.status === "pago")
-      .reduce((sum, r) => sum + (r.valorPago || 0), 0)
+    total: registrations.length,
+    pagos: registrations.filter(r => r.status_pagamento === "pago").length,
+    pendentes: registrations.filter(r => r.status_pagamento === "pendente").length,
+    receita: registrations
+      .filter(r => r.status_pagamento === "pago")
+      .reduce((sum, r) => sum + (r.valor_pago || evento?.valor_inscricao || 0), 0)
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-healing-gradient p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-healing-gradient p-4">
@@ -93,7 +144,7 @@ const AdminDashboard = () => {
             Painel Administrativo
           </h1>
           <p className="text-muted-foreground">
-            Gerencie as inscrições do evento de fisioterapia
+            {evento ? `Gerencie as inscrições do ${evento.nome}` : 'Gerencie as inscrições do evento'}
           </p>
         </div>
 
@@ -144,7 +195,7 @@ const AdminDashboard = () => {
                     R$ {stats.receita.toFixed(2)}
                   </p>
                 </div>
-                <CreditCard className="w-8 h-8 text-primary" />
+                <DollarSign className="w-8 h-8 text-primary" />
               </div>
             </CardContent>
           </Card>
@@ -171,7 +222,7 @@ const AdminDashboard = () => {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
-                        placeholder="Buscar por nome ou CPF..."
+                        placeholder="Buscar por nome, CPF ou telefone..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10 w-64"
@@ -186,38 +237,55 @@ const AdminDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredRegistrations.map((registration) => (
-                    <div
-                      key={registration.id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-background rounded-lg border border-border"
-                    >
-                      <div className="flex-1 space-y-1">
-                        <h3 className="font-medium text-foreground">
-                          {registration.nomeCompleto}
-                        </h3>
-                        <div className="flex flex-col sm:flex-row gap-2 text-sm text-muted-foreground">
-                          <span>CPF: {registration.cpf}</span>
-                          <span>•</span>
-                          <span>Tel: {registration.telefone}</span>
-                          <span>•</span>
-                          <span>Inscrição: {new Date(registration.dataInscricao).toLocaleDateString()}</span>
+                  {filteredRegistrations.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-foreground mb-2">
+                        {searchTerm ? 'Nenhuma inscrição encontrada' : 'Nenhuma inscrição ainda'}
+                      </h3>
+                      <p className="text-muted-foreground">
+                        {searchTerm 
+                          ? 'Tente buscar por outros termos.' 
+                          : 'As inscrições aparecerão aqui quando forem realizadas.'
+                        }
+                      </p>
+                    </div>
+                  ) : (
+                    filteredRegistrations.map((registration) => (
+                      <div
+                        key={registration.id}
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-background rounded-lg border border-border"
+                      >
+                        <div className="flex-1 space-y-1">
+                          <h3 className="font-medium text-foreground">
+                            {registration.nome_completo}
+                          </h3>
+                          <div className="flex flex-col sm:flex-row gap-2 text-sm text-muted-foreground">
+                            <span>CPF: {registration.cpf}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>Tel: {registration.telefone}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>Código: {registration.codigo_validacao}</span>
+                            <span className="hidden sm:inline">•</span>
+                            <span>Data: {new Date(registration.data_inscricao).toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                          {getStatusBadge(registration.status_pagamento)}
+                          <Button variant="outline" size="sm">
+                            <Eye className="w-4 h-4 mr-1" />
+                            Detalhes
+                          </Button>
+                          {registration.status_pagamento === "pago" && (
+                            <Button variant="outline" size="sm" className="text-primary">
+                              <QrCode className="w-4 h-4 mr-1" />
+                              QR Code
+                            </Button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                        {getStatusBadge(registration.status)}
-                        <Button variant="outline" size="sm">
-                          <Eye className="w-4 h-4 mr-1" />
-                          Ver Detalhes
-                        </Button>
-                        {registration.status === "pago" && (
-                          <Button variant="outline" size="sm" className="text-primary">
-                            <FileText className="w-4 h-4 mr-1" />
-                            Gerar QR Code
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

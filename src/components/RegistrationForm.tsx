@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Users, Calendar, MapPin } from "lucide-react";
+import { Heart, Users, Calendar, MapPin, Clock, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FormData {
   nomeCompleto: string;
@@ -15,6 +16,17 @@ interface FormData {
   telefone: string;
   lesoes: string;
   tratamento: string;
+}
+
+interface Evento {
+  id: string;
+  nome: string;
+  descricao: string;
+  data_evento: string;
+  local: string;
+  valor_inscricao: number;
+  vagas_totais: number;
+  vagas_ocupadas: number;
 }
 
 const RegistrationForm = () => {
@@ -29,7 +41,38 @@ const RegistrationForm = () => {
   
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [evento, setEvento] = useState<Evento | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchEvento = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('deller_eventos')
+          .select('*')
+          .eq('status', 'ativo')
+          .single();
+
+        if (error) {
+          console.error('Erro ao buscar evento:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar as informações do evento.",
+            variant: "destructive",
+          });
+        } else {
+          setEvento(data);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar evento:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvento();
+  }, [toast]);
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -87,18 +130,100 @@ const RegistrationForm = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    if (!evento) {
       toast({
-        title: "Inscrição realizada!",
-        description: "Você será redirecionado para o pagamento.",
+        title: "Erro",
+        description: "Informações do evento não encontradas.",
+        variant: "destructive",
       });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from('deller_inscricoes')
+        .insert({
+          evento_id: evento.id,
+          nome_completo: formData.nomeCompleto,
+          cpf: formData.cpf.replace(/\D/g, ''),
+          endereco: formData.endereco,
+          telefone: formData.telefone.replace(/\D/g, ''),
+          lesoes: formData.lesoes || null,
+          tratamento: formData.tratamento || null,
+          status_pagamento: 'pendente'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao salvar inscrição:', error);
+        if (error.code === '23505') {
+          toast({
+            title: "CPF já cadastrado",
+            description: "Este CPF já foi utilizado para inscrição neste evento.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro na inscrição",
+            description: "Tente novamente em alguns minutos.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+      
+      toast({
+        title: "Inscrição realizada com sucesso!",
+        description: `Código de validação: ${data.codigo_validacao}. Aguarde as informações de pagamento.`,
+      });
+      
+      // Reset form
+      setFormData({
+        nomeCompleto: "",
+        cpf: "",
+        endereco: "",
+        telefone: "",
+        lesoes: "",
+        tratamento: "",
+      });
+      setCurrentStep(1);
+    } catch (error) {
+      console.error('Erro ao salvar inscrição:', error);
+      toast({
+        title: "Erro na inscrição",
+        description: "Tente novamente em alguns minutos.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-      // Aqui seria feita a integração com o sistema de pagamento
-    }, 2000);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-healing-gradient p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando informações do evento...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!evento) {
+    return (
+      <div className="min-h-screen bg-healing-gradient p-4 flex items-center justify-center">
+        <Card className="max-w-md border-0 shadow-card-soft">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-semibold mb-2">Evento não encontrado</h2>
+            <p className="text-muted-foreground">Não há eventos ativos no momento.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-healing-gradient p-4">
@@ -107,24 +232,28 @@ const RegistrationForm = () => {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
             <Heart className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">Evento de Fisioterapia</h1>
+            <h1 className="text-3xl font-bold text-foreground">{evento.nome}</h1>
           </div>
           <p className="text-muted-foreground text-lg">
-            Cadastre-se para participar de atendimentos especializados
+            {evento.descricao}
           </p>
           
-          <div className="flex justify-center gap-4 mt-6">
+          <div className="flex justify-center gap-4 mt-6 flex-wrap">
             <Badge variant="secondary" className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              15 de Dezembro
+              {new Date(evento.data_evento).toLocaleDateString('pt-BR')}
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <MapPin className="w-4 h-4" />
-              Centro de Saúde
+              {evento.local}
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <DollarSign className="w-4 h-4" />
+              R$ {evento.valor_inscricao.toFixed(2)}
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <Users className="w-4 h-4" />
-              Vagas Limitadas
+              {evento.vagas_ocupadas}/{evento.vagas_totais} vagas
             </Badge>
           </div>
         </div>
@@ -281,7 +410,7 @@ const RegistrationForm = () => {
             <CardContent className="p-4">
               <h3 className="font-semibold text-primary mb-2">Informações Importantes</h3>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Evento gratuito para a comunidade</li>
+                <li>• Valor: R$ {evento.valor_inscricao.toFixed(2)}</li>
                 <li>• Duração: 4 horas</li>
                 <li>• Profissionais especializados</li>
                 <li>• Certificado de participação</li>
