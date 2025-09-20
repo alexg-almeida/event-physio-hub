@@ -119,6 +119,201 @@ export type Database = {
         }
         Relationships: []
       }
+      deller_eventos: {
+        Row: {
+          created_at: string
+          data_evento: string
+          descricao: string | null
+          id: string
+          local: string
+          nome: string
+          status: string
+          updated_at: string
+          vagas_ocupadas: number
+          vagas_totais: number
+          valor_inscricao: number
+        }
+        Insert: {
+          created_at?: string
+          data_evento: string
+          descricao?: string | null
+          id?: string
+          local: string
+          nome: string
+          status?: string
+          updated_at?: string
+          vagas_ocupadas?: number
+          vagas_totais?: number
+          valor_inscricao?: number
+        }
+        Update: {
+          created_at?: string
+          data_evento?: string
+          descricao?: string | null
+          id?: string
+          local?: string
+          nome?: string
+          status?: string
+          updated_at?: string
+          vagas_ocupadas?: number
+          vagas_totais?: number
+          valor_inscricao?: number
+        }
+        Relationships: []
+      }
+      deller_inscricoes: {
+        Row: {
+          codigo_validacao: string
+          cpf: string
+          created_at: string
+          data_inscricao: string
+          data_pagamento: string | null
+          endereco: string
+          evento_id: string
+          id: string
+          lesoes: string | null
+          nome_completo: string
+          qr_code_data: string | null
+          status_pagamento: string
+          telefone: string
+          tratamento: string | null
+          updated_at: string
+          valor_pago: number | null
+        }
+        Insert: {
+          codigo_validacao?: string
+          cpf: string
+          created_at?: string
+          data_inscricao?: string
+          data_pagamento?: string | null
+          endereco: string
+          evento_id: string
+          id?: string
+          lesoes?: string | null
+          nome_completo: string
+          qr_code_data?: string | null
+          status_pagamento?: string
+          telefone: string
+          tratamento?: string | null
+          updated_at?: string
+          valor_pago?: number | null
+        }
+        Update: {
+          codigo_validacao?: string
+          cpf?: string
+          created_at?: string
+          data_inscricao?: string
+          data_pagamento?: string | null
+          endereco?: string
+          evento_id?: string
+          id?: string
+          lesoes?: string | null
+          nome_completo?: string
+          qr_code_data?: string | null
+          status_pagamento?: string
+          telefone?: string
+          tratamento?: string | null
+          updated_at?: string
+          valor_pago?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deller_inscricoes_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "deller_eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deller_pagamentos: {
+        Row: {
+          asaas_payment_id: string | null
+          created_at: string
+          data_pagamento: string | null
+          data_vencimento: string | null
+          id: string
+          inscricao_id: string
+          metodo_pagamento: string | null
+          status: string
+          updated_at: string
+          valor: number
+          webhook_data: Json | null
+        }
+        Insert: {
+          asaas_payment_id?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          id?: string
+          inscricao_id: string
+          metodo_pagamento?: string | null
+          status?: string
+          updated_at?: string
+          valor: number
+          webhook_data?: Json | null
+        }
+        Update: {
+          asaas_payment_id?: string | null
+          created_at?: string
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          id?: string
+          inscricao_id?: string
+          metodo_pagamento?: string | null
+          status?: string
+          updated_at?: string
+          valor?: number
+          webhook_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deller_pagamentos_inscricao_id_fkey"
+            columns: ["inscricao_id"]
+            isOneToOne: false
+            referencedRelation: "deller_inscricoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deller_validacoes: {
+        Row: {
+          codigo_validacao: string
+          created_at: string
+          dispositivo_validacao: string | null
+          id: string
+          inscricao_id: string
+          validado_em: string
+          validado_por: string | null
+        }
+        Insert: {
+          codigo_validacao: string
+          created_at?: string
+          dispositivo_validacao?: string | null
+          id?: string
+          inscricao_id: string
+          validado_em?: string
+          validado_por?: string | null
+        }
+        Update: {
+          codigo_validacao?: string
+          created_at?: string
+          dispositivo_validacao?: string | null
+          id?: string
+          inscricao_id?: string
+          validado_em?: string
+          validado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deller_validacoes_inscricao_id_fkey"
+            columns: ["inscricao_id"]
+            isOneToOne: false
+            referencedRelation: "deller_inscricoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
