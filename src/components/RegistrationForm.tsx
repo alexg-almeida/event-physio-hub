@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Heart, Users, Calendar, MapPin, Clock, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,7 @@ interface FormData {
   cpf: string;
   endereco: string;
   telefone: string;
+  temLesao: boolean | null;
   lesoes: string;
   tratamento: string;
 }
@@ -35,6 +37,7 @@ const RegistrationForm = () => {
     cpf: "",
     endereco: "",
     telefone: "",
+    temLesao: null,
     lesoes: "",
     tratamento: "",
   });
@@ -121,10 +124,19 @@ const RegistrationForm = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.lesoes || !formData.tratamento) {
+    if (formData.temLesao === null) {
       toast({
         title: "Informações incompletas",
-        description: "Por favor, responda todas as perguntas médicas.",
+        description: "Por favor, responda se tem ou teve alguma lesão.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.temLesao && !formData.tratamento) {
+      toast({
+        title: "Informações incompletas",
+        description: "Por favor, informe se está em tratamento.",
         variant: "destructive",
       });
       return;
@@ -149,8 +161,8 @@ const RegistrationForm = () => {
           cpf: formData.cpf.replace(/\D/g, ''),
           endereco: formData.endereco,
           telefone: formData.telefone.replace(/\D/g, ''),
-          lesoes: formData.lesoes || null,
-          tratamento: formData.tratamento || null,
+          lesoes: formData.temLesao ? formData.lesoes : null,
+          tratamento: formData.temLesao ? formData.tratamento : null,
           status_pagamento: 'pendente'
         })
         .select()
@@ -185,6 +197,7 @@ const RegistrationForm = () => {
         cpf: "",
         endereco: "",
         telefone: "",
+        temLesao: null,
         lesoes: "",
         tratamento: "",
       });
@@ -234,9 +247,6 @@ const RegistrationForm = () => {
             <Heart className="w-8 h-8 text-primary" />
             <h1 className="text-3xl font-bold text-foreground">{evento.nome}</h1>
           </div>
-          <p className="text-muted-foreground text-lg">
-            {evento.descricao}
-          </p>
           
           <div className="flex justify-center gap-4 mt-6 flex-wrap">
             <Badge variant="secondary" className="flex items-center gap-1">
@@ -346,29 +356,59 @@ const RegistrationForm = () => {
               </>
             ) : (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="lesoes">Tem ou teve alguma lesão? *</Label>
-                  <Textarea
-                    id="lesoes"
-                    placeholder="Descreva suas lesões atuais ou passadas, ou escreva 'Não' se não tiver nenhuma"
-                    value={formData.lesoes}
-                    onChange={(e) => handleInputChange("lesoes", e.target.value)}
-                    rows={4}
-                    className="border-border focus:border-primary transition-colors resize-none"
-                  />
+                <div className="space-y-3">
+                  <Label>Tem ou teve alguma lesão? *</Label>
+                  <RadioGroup
+                    value={formData.temLesao === null ? "" : formData.temLesao ? "sim" : "nao"}
+                    onValueChange={(value) => {
+                      const temLesao = value === "sim";
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        temLesao,
+                        lesoes: temLesao ? prev.lesoes : "",
+                        tratamento: temLesao ? prev.tratamento : ""
+                      }));
+                    }}
+                    className="flex gap-6"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="sim" id="sim" />
+                      <Label htmlFor="sim">Sim</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="nao" id="nao" />
+                      <Label htmlFor="nao">Não</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tratamento">Está em tratamento ou já tratou? *</Label>
-                  <Textarea
-                    id="tratamento"
-                    placeholder="Conte sobre tratamentos fisioterapêuticos atuais ou anteriores, ou escreva 'Não' se nunca fez"
-                    value={formData.tratamento}
-                    onChange={(e) => handleInputChange("tratamento", e.target.value)}
-                    rows={4}
-                    className="border-border focus:border-primary transition-colors resize-none"
-                  />
-                </div>
+                {formData.temLesao && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="lesoes">Descreva suas lesões *</Label>
+                      <Textarea
+                        id="lesoes"
+                        placeholder="Descreva suas lesões atuais ou passadas"
+                        value={formData.lesoes}
+                        onChange={(e) => handleInputChange("lesoes", e.target.value)}
+                        rows={3}
+                        className="border-border focus:border-primary transition-colors resize-none"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tratamento">Está em tratamento ou já tratou? *</Label>
+                      <Textarea
+                        id="tratamento"
+                        placeholder="Conte sobre tratamentos fisioterapêuticos atuais ou anteriores"
+                        value={formData.tratamento}
+                        onChange={(e) => handleInputChange("tratamento", e.target.value)}
+                        rows={3}
+                        className="border-border focus:border-primary transition-colors resize-none"
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div className="flex gap-3">
                   <Button 
@@ -391,33 +431,6 @@ const RegistrationForm = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Info Cards */}
-        <div className="grid md:grid-cols-2 gap-4 mt-8">
-          <Card className="border-0 shadow-card-soft">
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-primary mb-2">Atendimentos Inclusos</h3>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Avaliação postural completa</li>
-                <li>• Orientações personalizadas</li>
-                <li>• Exercícios terapêuticos</li>
-                <li>• Consultoria em prevenção</li>
-              </ul>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-0 shadow-card-soft">
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-primary mb-2">Informações Importantes</h3>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Valor: R$ {evento.valor_inscricao.toFixed(2)}</li>
-                <li>• Duração: 4 horas</li>
-                <li>• Profissionais especializados</li>
-                <li>• Certificado de participação</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );

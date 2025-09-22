@@ -18,11 +18,11 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 210 20% 15%;
 
-    /* Primary: Medical green */
-    --primary: 160 84% 35%;
+    /* Primary: Fisio Deller Blue */
+    --primary: 200 100% 44%;
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary: Soft blue */
+    /* Secondary: Light Blue */
     --secondary: 200 50% 95%;
     --secondary-foreground: 200 50% 25%;
 
@@ -40,8 +40,8 @@ All colors MUST be HSL.
     --ring: 160 84% 35%;
     
     /* Custom healthcare tokens */
-    --medical-gradient: linear-gradient(135deg, hsl(160 84% 35%), hsl(180 70% 40%));
-    --healing-gradient: linear-gradient(135deg, hsl(180 100% 90%), hsl(160 50% 95%));
+    --medical-gradient: linear-gradient(135deg, hsl(200 100% 44%), hsl(210 100% 50%));
+    --healing-gradient: linear-gradient(135deg, hsl(200 50% 96%), hsl(210 50% 98%));
     --wellness-shadow: 0 10px 40px -15px hsl(160 84% 35% / 0.2);
     --card-shadow: 0 4px 20px -4px hsl(160 50% 50% / 0.1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -75,7 +75,7 @@ All colors MUST be HSL.
     --popover: 210 30% 10%;
     --popover-foreground: 160 30% 95%;
 
-    --primary: 160 84% 45%;
+    --primary: 200 100% 54%;
     --primary-foreground: 210 30% 8%;
 
     --secondary: 210 30% 15%;
@@ -94,8 +94,8 @@ All colors MUST be HSL.
     --input: 210 30% 15%;
     --ring: 160 84% 45%;
     
-    --medical-gradient: linear-gradient(135deg, hsl(160 84% 45%), hsl(180 70% 50%));
-    --healing-gradient: linear-gradient(135deg, hsl(180 50% 20%), hsl(160 30% 15%));
+    --medical-gradient: linear-gradient(135deg, hsl(200 100% 54%), hsl(210 100% 60%));
+    --healing-gradient: linear-gradient(135deg, hsl(200 30% 15%), hsl(210 30% 12%));
     --wellness-shadow: 0 10px 40px -15px hsl(160 84% 45% / 0.3);
     --card-shadow: 0 4px 20px -4px hsl(160 50% 50% / 0.2);
     --sidebar-background: 240 5.9% 10%;
