@@ -230,7 +230,7 @@ const RegistrationForm = () => {
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <MapPin className="w-4 h-4" />
-              {evento.local}
+              Local a Definir
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <DollarSign className="w-4 h-4" />
