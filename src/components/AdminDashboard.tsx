@@ -144,7 +144,7 @@ const AdminDashboard = () => {
             Painel Administrativo
           </h1>
           <p className="text-muted-foreground">
-            {evento ? `Gerencie as inscrições do ${evento.nome}` : 'Gerencie as inscrições do evento'}
+            Gerenciador de Inscrições
           </p>
         </div>
 
