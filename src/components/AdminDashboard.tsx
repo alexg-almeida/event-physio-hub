@@ -14,10 +14,14 @@ import {
   Download,
   Eye,
   QrCode,
-  DollarSign
+  DollarSign,
+  CheckSquare
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import RegistrationDetailsModal from "./admin/RegistrationDetailsModal";
+import DataExporter from "./admin/DataExporter";
+import ValidationScanner from "./admin/ValidationScanner";
 
 interface Registration {
   id: string;
@@ -46,6 +50,9 @@ const AdminDashboard = () => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [evento, setEvento] = useState<Evento | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showValidationScanner, setShowValidationScanner] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,6 +101,53 @@ const AdminDashboard = () => {
 
     fetchData();
   }, [toast]);
+
+  const handleViewDetails = (registration: Registration) => {
+    setSelectedRegistration(registration);
+    setShowDetailsModal(true);
+  };
+
+  const handleCloseDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedRegistration(null);
+  };
+
+  const handleUpdateRegistration = () => {
+    // Refresh data after update
+    const fetchData = async () => {
+      try {
+        const { data: eventoData, error: eventoError } = await supabase
+          .from('deller_eventos')
+          .select('id, nome, valor_inscricao')
+          .eq('status', 'ativo')
+          .single();
+
+        if (eventoError) {
+          console.error('Erro ao buscar evento:', eventoError);
+          return;
+        }
+
+        setEvento(eventoData);
+
+        const { data: inscricoesData, error: inscricoesError } = await supabase
+          .from('deller_inscricoes')
+          .select('*')
+          .eq('evento_id', eventoData.id)
+          .order('created_at', { ascending: false });
+
+        if (inscricoesError) {
+          console.error('Erro ao buscar inscrições:', inscricoesError);
+          return;
+        }
+
+        setRegistrations(inscricoesData || []);
+      } catch (error) {
+        console.error('Erro ao buscar dados:', error);
+      }
+    };
+
+    fetchData();
+  };
   
   const filteredRegistrations = registrations.filter(reg =>
     reg.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -272,7 +326,11 @@ const AdminDashboard = () => {
                         </div>
                         <div className="flex items-center gap-2 mt-2 sm:mt-0">
                           {getStatusBadge(registration.status_pagamento)}
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewDetails(registration)}
+                          >
                             <Eye className="w-4 h-4 mr-1" />
                             Detalhes
                           </Button>
@@ -316,57 +374,51 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="relatorios">
+          <TabsContent value="relatorios" className="space-y-4">
             <Card className="border-0 shadow-card-soft">
               <CardHeader>
-                <CardTitle>Relatórios e Análises</CardTitle>
+                <CardTitle>Relatórios e Exportação</CardTitle>
                 <CardDescription>
-                  Exportar dados e gerar relatórios do evento
+                  Gere relatórios e exporte dados do evento
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button variant="outline" className="justify-start h-auto p-4">
-                    <div className="text-left">
-                      <div className="font-medium">Relatório de Inscrições</div>
-                      <div className="text-sm text-muted-foreground">
-                        Lista completa com dados dos participantes
-                      </div>
-                    </div>
-                  </Button>
-                  
-                  <Button variant="outline" className="justify-start h-auto p-4">
-                    <div className="text-left">
-                      <div className="font-medium">Relatório Financeiro</div>
-                      <div className="text-sm text-muted-foreground">
-                        Controle de pagamentos e receita
-                      </div>
-                    </div>
-                  </Button>
-                  
-                  <Button variant="outline" className="justify-start h-auto p-4">
-                    <div className="text-left">
-                      <div className="font-medium">Lista de Presença</div>
-                      <div className="text-sm text-muted-foreground">
-                        Para controle no dia do evento
-                      </div>
-                    </div>
-                  </Button>
-                  
-                  <Button variant="outline" className="justify-start h-auto p-4">
-                    <div className="text-left">
-                      <div className="font-medium">QR Codes de Validação</div>
-                      <div className="text-sm text-muted-foreground">
-                        Códigos para entrada no evento
-                      </div>
-                    </div>
-                  </Button>
-                </div>
+                <DataExporter eventoId={evento?.id} />
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-card-soft">
+              <CardHeader>
+                <CardTitle>Validação de Entrada</CardTitle>
+                <CardDescription>
+                  Valide QR Codes e códigos de entrada no evento
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => setShowValidationScanner(true)}
+                  className="flex items-center gap-2"
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  Abrir Scanner de Validação
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      <RegistrationDetailsModal
+        registration={selectedRegistration}
+        isOpen={showDetailsModal}
+        onClose={handleCloseDetailsModal}
+        onUpdate={handleUpdateRegistration}
+      />
+
+      <ValidationScanner
+        isOpen={showValidationScanner}
+        onClose={() => setShowValidationScanner(false)}
+      />
     </div>
   );
 };
