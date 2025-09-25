@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ScanLine, Download, Edit, Save, X } from 'lucide-react';
+import { ScanBarcode, Download, Edit, Save, X } from 'lucide-react';
 import BarcodeGenerator from './BarcodeGenerator';
 
 interface Registration {
@@ -115,7 +115,7 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
                     size="sm"
                     onClick={() => setShowBarcode(true)}
                   >
-                    <ScanLine className="h-4 w-4 mr-2" />
+                    <ScanBarcode className="h-4 w-4 mr-2" />
                     Código de Barras
                   </Button>
                 )}

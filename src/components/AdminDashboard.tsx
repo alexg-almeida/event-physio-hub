@@ -13,7 +13,7 @@ import {
   XCircle,
   Download,
   Eye,
-  ScanLine,
+  ScanBarcode,
   DollarSign,
   CheckSquare
 } from "lucide-react";
@@ -336,7 +336,7 @@ const AdminDashboard = () => {
                           </Button>
                           {registration.status_pagamento === "pago" && (
                             <Button variant="outline" size="sm" className="text-primary">
-                              <ScanLine className="w-4 h-4 mr-1" />
+                              <ScanBarcode className="w-4 h-4 mr-1" />
                               Código de Barras
                             </Button>
                           )}
