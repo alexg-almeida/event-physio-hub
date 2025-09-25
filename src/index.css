@@ -8,8 +8,8 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Healthcare-inspired color palette */
-    --background: 120 50% 98%;
+    /* Healthcare-inspired color palette - Blue tones */
+    --background: 210 50% 98%;
     --foreground: 210 20% 15%;
 
     --card: 0 0% 100%;
@@ -26,24 +26,24 @@ All colors MUST be HSL.
     --secondary: 200 50% 95%;
     --secondary-foreground: 200 50% 25%;
 
-    --muted: 160 30% 96%;
-    --muted-foreground: 160 10% 45%;
+    --muted: 210 30% 96%;
+    --muted-foreground: 210 10% 45%;
 
-    --accent: 180 100% 90%;
-    --accent-foreground: 180 100% 25%;
+    --accent: 200 100% 90%;
+    --accent-foreground: 200 100% 25%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 160 30% 90%;
-    --input: 160 30% 94%;
-    --ring: 160 84% 35%;
+    --border: 210 30% 90%;
+    --input: 210 30% 94%;
+    --ring: 200 84% 35%;
     
     /* Custom healthcare tokens */
     --medical-gradient: linear-gradient(135deg, hsl(200 100% 44%), hsl(210 100% 50%));
     --healing-gradient: linear-gradient(135deg, hsl(200 50% 96%), hsl(210 50% 98%));
-    --wellness-shadow: 0 10px 40px -15px hsl(160 84% 35% / 0.2);
-    --card-shadow: 0 4px 20px -4px hsl(160 50% 50% / 0.1);
+    --wellness-shadow: 0 10px 40px -15px hsl(200 84% 35% / 0.2);
+    --card-shadow: 0 4px 20px -4px hsl(200 50% 50% / 0.1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;

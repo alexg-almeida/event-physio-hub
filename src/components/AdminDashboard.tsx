@@ -13,7 +13,7 @@ import {
   XCircle,
   Download,
   Eye,
-  QrCode,
+  ScanLine,
   DollarSign,
   CheckSquare
 } from "lucide-react";
@@ -336,8 +336,8 @@ const AdminDashboard = () => {
                           </Button>
                           {registration.status_pagamento === "pago" && (
                             <Button variant="outline" size="sm" className="text-primary">
-                              <QrCode className="w-4 h-4 mr-1" />
-                              QR Code
+                              <ScanLine className="w-4 h-4 mr-1" />
+                              Código de Barras
                             </Button>
                           )}
                         </div>
@@ -391,7 +391,7 @@ const AdminDashboard = () => {
               <CardHeader>
                 <CardTitle>Validação de Entrada</CardTitle>
                 <CardDescription>
-                  Valide QR Codes e códigos de entrada no evento
+                  Valide códigos de barras e códigos de entrada no evento
                 </CardDescription>
               </CardHeader>
               <CardContent>

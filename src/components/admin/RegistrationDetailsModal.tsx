@@ -7,8 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { QrCode, Download, Edit, Save, X } from 'lucide-react';
-import QRCodeGenerator from './QRCodeGenerator';
+import { ScanLine, Download, Edit, Save, X } from 'lucide-react';
+import BarcodeGenerator from './BarcodeGenerator';
 
 interface Registration {
   id: string;
@@ -42,7 +42,7 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedStatus, setEditedStatus] = useState('');
   const [observacoes, setObservacoes] = useState('');
-  const [showQRCode, setShowQRCode] = useState(false);
+  const [showBarcode, setShowBarcode] = useState(false);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -113,10 +113,10 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowQRCode(true)}
+                    onClick={() => setShowBarcode(true)}
                   >
-                    <QrCode className="h-4 w-4 mr-2" />
-                    QR Code
+                    <ScanLine className="h-4 w-4 mr-2" />
+                    Código de Barras
                   </Button>
                 )}
                 {!isEditing ? (
@@ -262,9 +262,9 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
         </DialogContent>
       </Dialog>
 
-      <QRCodeGenerator
-        isOpen={showQRCode}
-        onClose={() => setShowQRCode(false)}
+      <BarcodeGenerator
+        isOpen={showBarcode}
+        onClose={() => setShowBarcode(false)}
         registration={registration}
       />
     </>

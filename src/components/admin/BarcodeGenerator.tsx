@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, Printer } from 'lucide-react';
-import QRCode from 'qrcode';
+import JsBarcode from 'jsbarcode';
 import { useToast } from '@/hooks/use-toast';
 
 interface Registration {
@@ -12,71 +12,73 @@ interface Registration {
   evento_id?: string;
 }
 
-interface QRCodeGeneratorProps {
+interface BarcodeGeneratorProps {
   isOpen: boolean;
   onClose: () => void;
   registration: Registration;
 }
 
-const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
+const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
   isOpen,
   onClose,
   registration
 }) => {
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [barcodeUrl, setBarcodeUrl] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen && registration) {
-      generateQRCode();
+      generateBarcode();
     }
   }, [isOpen, registration]);
 
-  const generateQRCode = async () => {
+  const generateBarcode = async () => {
     try {
-      const qrData = JSON.stringify({
-        codigo_validacao: registration.codigo_validacao,
-        nome: registration.nome_completo,
-        inscricao_id: registration.id,
-        timestamp: new Date().toISOString()
+      const canvas = document.createElement('canvas');
+      
+      JsBarcode(canvas, registration.codigo_validacao, {
+        format: "CODE39",
+        width: 2,
+        height: 100,
+        displayValue: true,
+        font: "Arial",
+        fontSize: 16,
+        textAlign: "center",
+        textPosition: "bottom",
+        textMargin: 10,
+        fontOptions: "",
+        background: "#ffffff",
+        lineColor: "#1e40af" // Azul do Fisio Deller
       });
 
-      const url = await QRCode.toDataURL(qrData, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#1e40af', // Azul do Fisio Deller
-          light: '#ffffff'
-        }
-      });
-
-      setQrCodeUrl(url);
+      const url = canvas.toDataURL('image/png');
+      setBarcodeUrl(url);
     } catch (error) {
-      console.error('Erro ao gerar QR Code:', error);
+      console.error('Erro ao gerar código de barras:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível gerar o QR Code.",
+        description: "Não foi possível gerar o código de barras.",
         variant: "destructive",
       });
     }
   };
 
-  const downloadQRCode = () => {
-    if (!qrCodeUrl) return;
+  const downloadBarcode = () => {
+    if (!barcodeUrl) return;
 
     const link = document.createElement('a');
-    link.download = `qrcode-${registration.nome_completo.replace(/\s+/g, '_')}.png`;
-    link.href = qrCodeUrl;
+    link.download = `codigo-barras-${registration.nome_completo.replace(/\s+/g, '_')}.png`;
+    link.href = barcodeUrl;
     link.click();
 
     toast({
       title: "Download iniciado",
-      description: "O QR Code foi baixado com sucesso.",
+      description: "O código de barras foi baixado com sucesso.",
     });
   };
 
-  const printQRCode = () => {
-    if (!qrCodeUrl) return;
+  const printBarcode = () => {
+    if (!barcodeUrl) return;
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -84,14 +86,14 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     printWindow.document.write(`
       <html>
         <head>
-          <title>QR Code - ${registration.nome_completo}</title>
+          <title>Código de Barras - ${registration.nome_completo}</title>
           <style>
             body {
               font-family: Arial, sans-serif;
               text-align: center;
               padding: 20px;
             }
-            .qr-container {
+            .barcode-container {
               border: 2px solid #e5e7eb;
               border-radius: 8px;
               padding: 20px;
@@ -117,9 +119,9 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           </style>
         </head>
         <body>
-          <div class="qr-container">
+          <div class="barcode-container">
             <div class="participant-name">${registration.nome_completo}</div>
-            <img src="${qrCodeUrl}" alt="QR Code" />
+            <img src="${barcodeUrl}" alt="Código de Barras" />
             <div class="validation-code">Código: ${registration.codigo_validacao}</div>
           </div>
         </body>
@@ -134,7 +136,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>QR Code de Validação</DialogTitle>
+          <DialogTitle>Código de Barras de Validação</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 text-center">
@@ -147,13 +149,13 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
             </p>
           </div>
 
-          {qrCodeUrl && (
+          {barcodeUrl && (
             <div className="flex justify-center">
               <div className="border-2 border-border rounded-lg p-4 bg-background">
                 <img
-                  src={qrCodeUrl}
-                  alt="QR Code"
-                  className="w-64 h-64"
+                  src={barcodeUrl}
+                  alt="Código de Barras"
+                  className="max-w-full h-auto"
                 />
               </div>
             </div>
@@ -162,16 +164,16 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           <div className="flex justify-center gap-3">
             <Button
               variant="outline"
-              onClick={downloadQRCode}
-              disabled={!qrCodeUrl}
+              onClick={downloadBarcode}
+              disabled={!barcodeUrl}
             >
               <Download className="h-4 w-4 mr-2" />
               Download
             </Button>
             <Button
               variant="outline"
-              onClick={printQRCode}
-              disabled={!qrCodeUrl}
+              onClick={printBarcode}
+              disabled={!barcodeUrl}
             >
               <Printer className="h-4 w-4 mr-2" />
               Imprimir
@@ -179,7 +181,7 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
           </div>
 
           <div className="text-xs text-muted-foreground bg-muted p-3 rounded-lg">
-            <p>Este QR Code será usado para validar a entrada do participante no evento.</p>
+            <p>Este código de barras será usado para validar a entrada do participante no evento.</p>
             <p className="mt-1">Mantenha-o seguro e apresente na entrada.</p>
           </div>
         </div>
@@ -188,4 +190,4 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
   );
 };
 
-export default QRCodeGenerator;
+export default BarcodeGenerator;
