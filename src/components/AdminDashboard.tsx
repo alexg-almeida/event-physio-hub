@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import RegistrationDetailsModal from "./admin/RegistrationDetailsModal";
 import DataExporter from "./admin/DataExporter";
 import ValidationScanner from "./admin/ValidationScanner";
+import BarcodeGenerator from "./admin/BarcodeGenerator";
 
 interface Registration {
   id: string;
@@ -53,6 +54,8 @@ const AdminDashboard = () => {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showValidationScanner, setShowValidationScanner] = useState(false);
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [selectedForBarcode, setSelectedForBarcode] = useState<Registration | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -147,6 +150,16 @@ const AdminDashboard = () => {
     };
 
     fetchData();
+  };
+
+  const handleShowBarcode = (registration: Registration) => {
+    setSelectedForBarcode(registration);
+    setShowBarcodeModal(true);
+  };
+
+  const handleCloseBarcodeModal = () => {
+    setShowBarcodeModal(false);
+    setSelectedForBarcode(null);
   };
   
   const filteredRegistrations = registrations.filter(reg =>
@@ -335,7 +348,12 @@ const AdminDashboard = () => {
                             Detalhes
                           </Button>
                           {registration.status_pagamento === "pago" && (
-                            <Button variant="outline" size="sm" className="text-primary">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-primary"
+                              onClick={() => handleShowBarcode(registration)}
+                            >
                               <ScanBarcode className="w-4 h-4 mr-1" />
                               Código de Barras
                             </Button>
@@ -418,6 +436,12 @@ const AdminDashboard = () => {
       <ValidationScanner
         isOpen={showValidationScanner}
         onClose={() => setShowValidationScanner(false)}
+      />
+
+      <BarcodeGenerator
+        isOpen={showBarcodeModal}
+        onClose={handleCloseBarcodeModal}
+        registration={selectedForBarcode}
       />
     </div>
   );
