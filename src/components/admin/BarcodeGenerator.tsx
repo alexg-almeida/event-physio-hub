@@ -15,7 +15,7 @@ interface Registration {
 interface BarcodeGeneratorProps {
   isOpen: boolean;
   onClose: () => void;
-  registration: Registration;
+  registration: Registration | null;
 }
 
 const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
@@ -33,6 +33,8 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
   }, [isOpen, registration]);
 
   const generateBarcode = async () => {
+    if (!registration) return;
+    
     try {
       const canvas = document.createElement('canvas');
       
@@ -64,7 +66,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
   };
 
   const downloadBarcode = () => {
-    if (!barcodeUrl) return;
+    if (!barcodeUrl || !registration) return;
 
     const link = document.createElement('a');
     link.download = `codigo-barras-${registration.nome_completo.replace(/\s+/g, '_')}.png`;
@@ -78,7 +80,7 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
   };
 
   const printBarcode = () => {
-    if (!barcodeUrl) return;
+    if (!barcodeUrl || !registration) return;
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -142,10 +144,10 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
         <div className="space-y-6 text-center">
           <div className="space-y-2">
             <h3 className="font-semibold text-lg text-foreground">
-              {registration.nome_completo}
+              {registration?.nome_completo}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Código: <span className="font-mono">{registration.codigo_validacao}</span>
+              Código: <span className="font-mono">{registration?.codigo_validacao}</span>
             </p>
           </div>
 
