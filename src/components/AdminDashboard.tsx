@@ -93,6 +93,17 @@ const AdminDashboard = () => {
             });
           } else {
             setRegistrations(inscricoesData || []);
+            
+            // Buscar quantidade de presenças confirmadas
+            const inscricaoIds = inscricoesData?.map(i => i.id) || [];
+            const { data: validacoesData, error: validacoesError } = await supabase
+              .from('deller_validacoes')
+              .select('id')
+              .in('inscricao_id', inscricaoIds);
+            
+            if (!validacoesError) {
+              setPresentes(validacoesData?.length || 0);
+            }
           }
         }
       } catch (error) {
@@ -144,6 +155,17 @@ const AdminDashboard = () => {
         }
 
         setRegistrations(inscricoesData || []);
+        
+        // Atualizar presenças
+        const inscricaoIds = inscricoesData?.map(i => i.id) || [];
+        const { data: validacoesData, error: validacoesError } = await supabase
+          .from('deller_validacoes')
+          .select('id')
+          .in('inscricao_id', inscricaoIds);
+        
+        if (!validacoesError) {
+          setPresentes(validacoesData?.length || 0);
+        }
       } catch (error) {
         console.error('Erro ao buscar dados:', error);
       }
@@ -183,10 +205,13 @@ const AdminDashboard = () => {
     }
   };
 
+  const [presentes, setPresentes] = useState(0);
+
   const stats = {
     total: registrations.length,
     pagos: registrations.filter(r => r.status_pagamento === "pago").length,
     pendentes: registrations.filter(r => r.status_pagamento === "pendente").length,
+    presentes: presentes,
     receita: registrations
       .filter(r => r.status_pagamento === "pago")
       .reduce((sum, r) => sum + (r.valor_pago || evento?.valor_inscricao || 0), 0)
@@ -253,6 +278,21 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
 
+          <Card className="border-0 shadow-card-soft">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Presenças Confirmadas</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.presentes}</p>
+                </div>
+                <CheckSquare className="w-8 h-8 text-green-600" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Receita Card */}
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8">
           <Card className="border-0 shadow-card-soft">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -407,19 +447,29 @@ const AdminDashboard = () => {
 
             <Card className="border-0 shadow-card-soft">
               <CardHeader>
-                <CardTitle>Validação de Entrada</CardTitle>
+                <CardTitle>Confirmação de Presença</CardTitle>
                 <CardDescription>
-                  Valide códigos de barras e códigos de entrada no evento
+                  Scanner para confirmar presença no evento através do código de validação
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  onClick={() => setShowValidationScanner(true)}
-                  className="flex items-center gap-2"
-                >
-                  <CheckSquare className="h-4 w-4" />
-                  Abrir Scanner de Validação
-                </Button>
+                <div className="space-y-4">
+                  <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                    <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
+                      Sistema de Presença Automático
+                    </p>
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      Ao validar um código, a presença é automaticamente registrada no sistema.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => setShowValidationScanner(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+                    Abrir Scanner de Presença
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

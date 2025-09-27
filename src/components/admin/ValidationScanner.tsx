@@ -79,16 +79,16 @@ const ValidationScanner: React.FC<ValidationScannerProps> = ({
 
       if (validacaoError) throw validacaoError;
 
-      if (validacaoExistente) {
-        setResult({
-          success: false,
-          message: 'Este código já foi validado anteriormente.',
-          participantName: inscricao.nome_completo,
-          alreadyValidated: true,
-          validationTime: new Date(validacaoExistente.validado_em).toLocaleString('pt-BR')
-        });
-        return;
-      }
+        if (validacaoExistente) {
+          setResult({
+            success: false,
+            message: 'Presença já foi confirmada anteriormente.',
+            participantName: inscricao.nome_completo,
+            alreadyValidated: true,
+            validationTime: new Date(validacaoExistente.validado_em).toLocaleString('pt-BR')
+          });
+          return;
+        }
 
       // Criar nova validação
       const { error: createError } = await supabase
@@ -104,14 +104,14 @@ const ValidationScanner: React.FC<ValidationScannerProps> = ({
 
       setResult({
         success: true,
-        message: 'Entrada validada com sucesso!',
+        message: 'Presença confirmada com sucesso!',
         participantName: inscricao.nome_completo,
         validationTime: new Date().toLocaleString('pt-BR')
       });
 
       toast({
-        title: "Validação realizada",
-        description: `Entrada de ${inscricao.nome_completo} confirmada.`,
+        title: "Presença confirmada",
+        description: `Presença de ${inscricao.nome_completo} registrada.`,
       });
 
       // Limpar o código após validação bem-sucedida
@@ -151,7 +151,7 @@ const ValidationScanner: React.FC<ValidationScannerProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Validação de Entrada</DialogTitle>
+          <DialogTitle>Confirmação de Presença</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -211,16 +211,16 @@ const ValidationScanner: React.FC<ValidationScannerProps> = ({
                     </p>
                   )}
                   
-                  {result.validationTime && (
-                    <p className={`text-xs mt-1 ${
-                      result.success 
-                        ? 'text-green-600 dark:text-green-400' 
-                        : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {result.alreadyValidated ? 'Validado em: ' : 'Validação realizada em: '}
-                      {result.validationTime}
-                    </p>
-                  )}
+                     {result.validationTime && (
+                     <p className={`text-xs mt-1 ${
+                       result.success 
+                         ? 'text-green-600 dark:text-green-400' 
+                         : 'text-red-600 dark:text-red-400'
+                     }`}>
+                       {result.alreadyValidated ? 'Presença já confirmada em: ' : 'Presença confirmada em: '}
+                       {result.validationTime}
+                     </p>
+                   )}
                 </div>
               </div>
             </div>
