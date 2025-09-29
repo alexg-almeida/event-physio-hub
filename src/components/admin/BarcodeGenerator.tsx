@@ -40,17 +40,17 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
       
       JsBarcode(canvas, registration.codigo_validacao, {
         format: "CODE39",
-        width: 2,
-        height: 100,
+        width: 4,
+        height: 130,
         displayValue: true,
         font: "Arial",
-        fontSize: 16,
+        fontSize: 18,
         textAlign: "center",
         textPosition: "bottom",
-        textMargin: 10,
+        textMargin: 12,
         fontOptions: "",
         background: "#ffffff",
-        lineColor: "#1e40af" // Azul do Fisio Deller
+        lineColor: "#000000" // Preto para máxima legibilidade
       });
 
       const url = canvas.toDataURL('image/png');
@@ -94,25 +94,26 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
               font-family: Arial, sans-serif;
               text-align: center;
               padding: 20px;
+              background: white;
             }
             .barcode-container {
-              border: 2px solid #e5e7eb;
-              border-radius: 8px;
-              padding: 20px;
+              background: white;
+              padding: 30px;
               display: inline-block;
               margin: 20px;
             }
             .participant-name {
-              font-size: 18px;
+              font-size: 20px;
               font-weight: bold;
-              margin-bottom: 10px;
-              color: #1e40af;
+              margin-bottom: 15px;
+              color: #000000;
             }
             .validation-code {
-              font-size: 14px;
-              color: #6b7280;
-              margin-top: 10px;
+              font-size: 16px;
+              color: #000000;
+              margin-top: 15px;
               font-family: monospace;
+              font-weight: bold;
             }
             img {
               display: block;
@@ -153,11 +154,12 @@ const BarcodeGenerator: React.FC<BarcodeGeneratorProps> = ({
 
           {barcodeUrl && (
             <div className="flex justify-center">
-              <div className="border-2 border-border rounded-lg p-4 bg-background">
+              <div className="bg-white p-6 rounded-lg">
                 <img
                   src={barcodeUrl}
                   alt="Código de Barras"
                   className="max-w-full h-auto"
+                  style={{ maxWidth: '350px' }}
                 />
               </div>
             </div>
