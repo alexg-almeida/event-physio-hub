@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ScanBarcode, Download, Edit, Save, X } from 'lucide-react';
-import BarcodeGenerator from './BarcodeGenerator';
+import QRCodeGenerator from './QRCodeGenerator';
 
 interface Registration {
   id: string;
@@ -262,7 +262,7 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
         </DialogContent>
       </Dialog>
 
-      <BarcodeGenerator
+      <QRCodeGenerator
         isOpen={showBarcode}
         onClose={() => setShowBarcode(false)}
         registration={registration}

@@ -21,8 +21,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import RegistrationDetailsModal from "./admin/RegistrationDetailsModal";
 import DataExporter from "./admin/DataExporter";
-import ValidationScanner from "./admin/ValidationScanner";
-import BarcodeGenerator from "./admin/BarcodeGenerator";
+import QRCodeGenerator from "./admin/QRCodeGenerator";
+import QRCodeScanner from "./admin/QRCodeScanner";
 
 interface Registration {
   id: string;
@@ -53,7 +53,6 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showValidationScanner, setShowValidationScanner] = useState(false);
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [selectedForBarcode, setSelectedForBarcode] = useState<Registration | null>(null);
 
@@ -240,6 +239,11 @@ const AdminDashboard = () => {
           </p>
         </div>
 
+        {/* QR Code Scanner na Home */}
+        <div className="mb-8">
+          <QRCodeScanner />
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card className="border-0 shadow-card-soft">
@@ -387,15 +391,15 @@ const AdminDashboard = () => {
                             <Eye className="w-4 h-4 mr-1" />
                             Detalhes
                           </Button>
-                          {registration.status_pagamento === "pago" && (
+                           {registration.status_pagamento === "pago" && (
                             <Button 
                               variant="outline" 
                               size="sm" 
                               className="text-primary"
                               onClick={() => handleShowBarcode(registration)}
                             >
-                              <ScanBarcode className="w-4 h-4 mr-1" />
-                              Código de Barras
+                              <ScanBarcode className="w-4 w-4 mr-1" />
+                              QR Code
                             </Button>
                           )}
                         </div>
@@ -444,34 +448,6 @@ const AdminDashboard = () => {
                 <DataExporter eventoId={evento?.id} />
               </CardContent>
             </Card>
-
-            <Card className="border-0 shadow-card-soft">
-              <CardHeader>
-                <CardTitle>Confirmação de Presença</CardTitle>
-                <CardDescription>
-                  Scanner para confirmar presença no evento através do código de validação
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                    <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
-                      Sistema de Presença Automático
-                    </p>
-                    <p className="text-xs text-green-700 dark:text-green-300">
-                      Ao validar um código, a presença é automaticamente registrada no sistema.
-                    </p>
-                  </div>
-                  <Button 
-                    onClick={() => setShowValidationScanner(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <CheckSquare className="h-4 w-4" />
-                    Abrir Scanner de Presença
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
@@ -483,12 +459,7 @@ const AdminDashboard = () => {
         onUpdate={handleUpdateRegistration}
       />
 
-      <ValidationScanner
-        isOpen={showValidationScanner}
-        onClose={() => setShowValidationScanner(false)}
-      />
-
-      <BarcodeGenerator
+      <QRCodeGenerator
         isOpen={showBarcodeModal}
         onClose={handleCloseBarcodeModal}
         registration={selectedForBarcode}
