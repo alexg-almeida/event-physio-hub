@@ -18,12 +18,28 @@ const QRCodeScanner: React.FC = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [showManualInput, setShowManualInput] = useState(false);
   const [manualCode, setManualCode] = useState('');
   const [cameraError, setCameraError] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const readerElementRef = useRef<boolean>(false);
   const { toast } = useToast();
+
+  // Detectar iOS Safari
+  const isIOSSafari = () => {
+    const ua = navigator.userAgent;
+    const iOS = /iPad|iPhone|iPod/.test(ua);
+    const webkit = /WebKit/.test(ua);
+    return iOS && webkit && !/CriOS|FxiOS|OPiOS|mercury/.test(ua);
+  };
+
+  // Detectar se está em iframe
+  const isInIframe = () => {
+    try {
+      return window.self !== window.top;
+    } catch (e) {
+      return true;
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -144,20 +160,56 @@ const QRCodeScanner: React.FC = () => {
       setValidationResult(null);
       setCameraError('');
       
+      // Aviso para iOS Safari em iframe
+      if (isIOSSafari() && isInIframe()) {
+        toast({
+          title: "Limitação do iOS Safari",
+          description: "Câmera pode não funcionar no preview. Teste após deploy ou use validação manual.",
+          variant: "destructive",
+        });
+        setCameraError("iOS Safari em iframe pode não permitir acesso à câmera. Use validação manual ou teste após deploy.");
+        return;
+      }
+      
       // Verificar se getUserMedia está disponível
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Câmera não suportada neste navegador');
       }
 
-      // Aguardar o DOM estar pronto
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // PASSO 1: Solicitar permissão explicitamente ANTES de inicializar Html5Qrcode
+      // Isso é crítico para iOS Safari - a permissão deve ser solicitada diretamente no evento de clique
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: "environment" } 
+        });
+      } catch (permissionError: any) {
+        let errorMessage = "Não foi possível acessar a câmera.";
+        
+        if (permissionError.name === 'NotAllowedError') {
+          errorMessage = "Permissão de câmera negada. Permita o acesso à câmera nas configurações.";
+        } else if (permissionError.name === 'NotFoundError') {
+          errorMessage = "Nenhuma câmera encontrada no dispositivo.";
+        } else if (permissionError.name === 'NotReadableError') {
+          errorMessage = "Câmera está sendo usada por outro aplicativo.";
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      // Parar a stream temporária - só queríamos a permissão
+      stream.getTracks().forEach(track => track.stop());
+
+      // PASSO 2: Aguardar elemento estar no DOM
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Verificar se o elemento existe
+      // PASSO 3: Verificar se o elemento existe
       const element = document.getElementById("qr-reader");
       if (!element) {
         throw new Error('Elemento do scanner não encontrado');
       }
 
+      // PASSO 4: Inicializar Html5Qrcode DEPOIS de obter permissão
       readerElementRef.current = true;
       const html5QrCode = new Html5Qrcode("qr-reader");
       scannerRef.current = html5QrCode;
@@ -180,20 +232,13 @@ const QRCodeScanner: React.FC = () => {
     } catch (error: any) {
       console.error("Erro ao iniciar scanner:", error);
       
-      let errorMessage = "Não foi possível acessar a câmera.";
+      let errorMessage = error.message || "Não foi possível acessar a câmera.";
       
-      if (error.name === 'NotAllowedError') {
-        errorMessage = "Permissão de câmera negada. Permita o acesso à câmera nas configurações.";
-      } else if (error.name === 'NotFoundError') {
-        errorMessage = "Nenhuma câmera encontrada no dispositivo.";
-      } else if (error.name === 'NotReadableError') {
-        errorMessage = "Câmera está sendo usada por outro aplicativo.";
-      } else if (error.message?.includes('https')) {
+      if (error.message?.includes('https')) {
         errorMessage = "Câmera requer conexão HTTPS segura.";
       }
       
       setCameraError(errorMessage);
-      setShowManualInput(true);
       
       toast({
         title: "Erro ao acessar câmera",
@@ -219,7 +264,6 @@ const QRCodeScanner: React.FC = () => {
   const resetScanner = () => {
     setValidationResult(null);
     setCameraError('');
-    setShowManualInput(false);
     setManualCode('');
     if (isScanning) {
       stopScanning();
@@ -245,6 +289,14 @@ const QRCodeScanner: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Renderizar elemento #qr-reader SEMPRE no DOM, escondido quando não em uso */}
+        <div 
+          id="qr-reader" 
+          className={`w-full rounded-lg overflow-hidden border-2 border-primary ${
+            isScanning ? 'block' : 'hidden'
+          }`}
+        />
+
         {!isScanning && !validationResult && (
           <div className="space-y-3">
             <Button 
@@ -256,37 +308,37 @@ const QRCodeScanner: React.FC = () => {
               Abrir Câmera
             </Button>
             
-            <Button 
-              onClick={() => setShowManualInput(!showManualInput)} 
-              variant="outline"
-              className="w-full"
-            >
-              <Keyboard className="h-4 w-4 mr-2" />
-              Inserir Código Manualmente
-            </Button>
-
-            {showManualInput && (
-              <div className="space-y-2 pt-2">
-                <Input
-                  placeholder="Digite o código do QR Code"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleManualValidation()}
-                  className="h-12"
-                />
-                <Button 
-                  onClick={handleManualValidation}
-                  className="w-full"
-                  disabled={!manualCode.trim()}
-                >
-                  Validar Código
-                </Button>
+            {/* Input manual SEMPRE disponível */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <Keyboard className="h-4 w-4" />
+                <span>Ou valide manualmente:</span>
               </div>
-            )}
+              <Input
+                placeholder="Digite o código do QR Code"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleManualValidation()}
+                className="h-12"
+              />
+              <Button 
+                onClick={handleManualValidation}
+                className="w-full"
+                disabled={!manualCode.trim()}
+                variant="outline"
+              >
+                Validar Código
+              </Button>
+            </div>
 
             {cameraError && (
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                <p className="text-sm text-destructive">{cameraError}</p>
+                <p className="text-sm text-destructive font-medium">{cameraError}</p>
+                {isIOSSafari() && isInIframe() && (
+                  <p className="text-xs text-destructive/80 mt-2">
+                    💡 Dica: Use a validação manual acima ou teste o app após fazer deploy.
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -294,10 +346,6 @@ const QRCodeScanner: React.FC = () => {
 
         {isScanning && (
           <div className="space-y-4">
-            <div 
-              id="qr-reader" 
-              className="w-full rounded-lg overflow-hidden border-2 border-primary"
-            />
             <Button 
               onClick={stopScanning} 
               variant="outline" 
