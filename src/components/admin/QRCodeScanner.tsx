@@ -197,23 +197,29 @@ const QRCodeScanner: React.FC = () => {
         throw new Error(errorMessage);
       }
 
-      // Parar a stream temporária - só queríamos a permissão
-      stream.getTracks().forEach(track => track.stop());
-
-      // PASSO 2: Aguardar elemento estar no DOM
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Não parar a stream - deixar Html5Qrcode gerenciá-la
+      console.log('✅ Permissão de câmera obtida');
       
-      // PASSO 3: Verificar se o elemento existe
+      // PASSO 2: Tornar elemento visível ANTES de inicializar scanner
+      setIsScanning(true);
+      console.log('✅ Elemento tornando visível');
+      
+      // Aguardar React re-renderizar o elemento de hidden para block
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // PASSO 3: Verificar se o elemento existe e está visível
       const element = document.getElementById("qr-reader");
       if (!element) {
         throw new Error('Elemento do scanner não encontrado');
       }
+      console.log('✅ Elemento encontrado no DOM', element);
 
-      // PASSO 4: Inicializar Html5Qrcode DEPOIS de obter permissão
+      // PASSO 4: Inicializar Html5Qrcode
       readerElementRef.current = true;
       const html5QrCode = new Html5Qrcode("qr-reader");
       scannerRef.current = html5QrCode;
 
+      console.log('🎥 Iniciando scanner...');
       await html5QrCode.start(
         { facingMode: "environment" },
         {
@@ -222,13 +228,14 @@ const QRCodeScanner: React.FC = () => {
           aspectRatio: 1.0,
         },
         (decodedText) => {
+          console.log('✅ QR Code lido:', decodedText);
           validateCode(decodedText);
           stopScanning();
         },
         undefined
       );
-
-      setIsScanning(true);
+      
+      console.log('✅ Scanner iniciado com sucesso');
     } catch (error: any) {
       console.error("Erro ao iniciar scanner:", error);
       
@@ -292,7 +299,7 @@ const QRCodeScanner: React.FC = () => {
         {/* Renderizar elemento #qr-reader SEMPRE no DOM, escondido quando não em uso */}
         <div 
           id="qr-reader" 
-          className={`w-full rounded-lg overflow-hidden border-2 border-primary ${
+          className={`w-full min-h-[400px] rounded-lg overflow-hidden border-2 border-primary ${
             isScanning ? 'block' : 'hidden'
           }`}
         />
