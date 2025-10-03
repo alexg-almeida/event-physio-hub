@@ -241,7 +241,7 @@ const AdminDashboard = () => {
 
         {/* QR Code Scanner na Home */}
         <div className="mb-8">
-          <QRCodeScanner />
+          <QRCodeScanner onValidationSuccess={handleUpdateRegistration} />
         </div>
 
         {/* Stats Cards */}

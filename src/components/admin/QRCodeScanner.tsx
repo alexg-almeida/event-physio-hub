@@ -14,7 +14,11 @@ interface ValidationResult {
   validatedAt?: string;
 }
 
-const QRCodeScanner: React.FC = () => {
+interface QRCodeScannerProps {
+  onValidationSuccess?: () => void;
+}
+
+const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -120,6 +124,11 @@ const QRCodeScanner: React.FC = () => {
 
       if (validacaoError) {
         throw validacaoError;
+      }
+
+      // ✅ Notificar o componente pai para atualizar o dashboard
+      if (onValidationSuccess) {
+        onValidationSuccess();
       }
 
       setValidationResult({
