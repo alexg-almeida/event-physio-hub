@@ -126,7 +126,12 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
         throw validacaoError;
       }
 
-      // ✅ Notificar o componente pai para atualizar o dashboard
+      console.log('🎯 Validação salva com sucesso, aguardando 500ms para garantir commit...');
+      
+      // Aguardar commit no banco antes de notificar
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('📢 Notificando dashboard para atualizar...');
       if (onValidationSuccess) {
         onValidationSuccess();
       }

@@ -125,10 +125,14 @@ const AdminDashboard = () => {
     setSelectedRegistration(null);
   };
 
-  const handleUpdateRegistration = () => {
+  const handleUpdateRegistration = async () => {
+    console.log('🔄 Dashboard recebeu notificação de atualização');
+    
     // Refresh data after update
     const fetchData = async () => {
       try {
+        console.log('📥 Buscando dados atualizados do banco...');
+        
         const { data: eventoData, error: eventoError } = await supabase
           .from('deller_eventos')
           .select('id, nome, valor_inscricao')
@@ -154,6 +158,7 @@ const AdminDashboard = () => {
         }
 
         setRegistrations(inscricoesData || []);
+        console.log(`✅ ${inscricoesData?.length || 0} inscrições carregadas`);
         
         // Atualizar presenças
         const inscricaoIds = inscricoesData?.map(i => i.id) || [];
@@ -164,13 +169,15 @@ const AdminDashboard = () => {
         
         if (!validacoesError) {
           setPresentes(validacoesData?.length || 0);
+          console.log(`✅ ${validacoesData?.length || 0} presenças confirmadas`);
         }
       } catch (error) {
-        console.error('Erro ao buscar dados:', error);
+        console.error('❌ Erro ao buscar dados:', error);
       }
     };
 
-    fetchData();
+    await fetchData();
+    console.log('✅ Dashboard atualizado com sucesso');
   };
 
   const handleShowBarcode = (registration: Registration) => {
