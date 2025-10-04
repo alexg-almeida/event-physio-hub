@@ -137,12 +137,12 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-full sm:max-w-md px-4 sm:px-6">
         <DialogHeader>
           <DialogTitle>QR Code de Validação</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 text-center">
+        <div className="space-y-4 sm:space-y-6 text-center">
           <div className="space-y-2">
             <h3 className="font-semibold text-lg text-foreground">
               {registration?.nome_completo}
@@ -154,17 +154,17 @@ const QRCodeGenerator: React.FC<QRCodeGeneratorProps> = ({
 
           {qrCodeUrl && (
             <div className="flex justify-center">
-              <div className="bg-white p-6 rounded-lg shadow-lg">
+              <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg">
                 <img
                   src={qrCodeUrl}
                   alt="QR Code"
-                  className="w-64 h-64"
+                  className="w-48 h-48 sm:w-64 sm:h-64"
                 />
               </div>
             </div>
           )}
 
-          <div className="flex justify-center gap-3">
+          <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3">
             <Button
               variant="outline"
               onClick={downloadQRCode}

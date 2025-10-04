@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -213,7 +213,8 @@ const AdminDashboard = () => {
 
   const [presentes, setPresentes] = useState(0);
 
-  const stats = {
+  // ✅ Usar useMemo para recalcular stats quando registrations ou presentes mudarem
+  const stats = useMemo(() => ({
     total: registrations.length,
     pagos: registrations.filter(r => r.status_pagamento === "pago").length,
     pendentes: registrations.filter(r => r.status_pagamento === "pendente").length,
@@ -221,7 +222,7 @@ const AdminDashboard = () => {
     receita: registrations
       .filter(r => r.status_pagamento === "pago")
       .reduce((sum, r) => sum + (r.valor_pago || evento?.valor_inscricao || 0), 0)
-  };
+  }), [registrations, presentes, evento?.valor_inscricao]);
 
   if (loading) {
     return (

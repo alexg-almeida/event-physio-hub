@@ -104,11 +104,11 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto px-4 sm:px-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              Detalhes da Inscrição
-              <div className="flex gap-2">
+            <DialogTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <span>Detalhes da Inscrição</span>
+              <div className="flex flex-wrap gap-2">
                 {registration.status_pagamento === 'pago' && (
                   <Button
                     variant="outline"
@@ -155,7 +155,7 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
             {/* Dados Pessoais */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Dados Pessoais</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Nome Completo</Label>
                   <p className="text-foreground">{registration.nome_completo}</p>
@@ -203,7 +203,7 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
             {/* Status e Pagamento */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-foreground">Status e Pagamento</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Status</Label>
                   {isEditing ? (

@@ -90,14 +90,19 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
         return;
       }
 
-      // Verificar se já foi validado
-      const { data: validacaoExistente } = await supabase
+      // ✅ Verificar se já foi validado (buscar por inscricao_id)
+      const { data: validacaoExistente, error: validacaoCheckError } = await supabase
         .from('deller_validacoes')
         .select('*')
         .eq('inscricao_id', inscricao.id)
-        .single();
+        .maybeSingle();
+
+      if (validacaoCheckError) {
+        console.error('Erro ao verificar validação:', validacaoCheckError);
+      }
 
       if (validacaoExistente) {
+        console.log('⚠️ Participante já validado anteriormente');
         setValidationResult({
           success: false,
           message: 'Participante já teve presença confirmada.',
