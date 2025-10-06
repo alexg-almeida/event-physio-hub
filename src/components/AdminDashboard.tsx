@@ -95,13 +95,25 @@ const AdminDashboard = () => {
             
             // Buscar quantidade de presenças confirmadas
             const inscricaoIds = inscricoesData?.map(i => i.id) || [];
+            console.log('🔍 Buscando validações para', inscricaoIds.length, 'inscrições:', inscricaoIds);
+            
             const { data: validacoesData, error: validacoesError } = await supabase
               .from('deller_validacoes')
-              .select('id')
-              .in('inscricao_id', inscricaoIds);
+              .select('inscricao_id')
+              .in('inscricao_id', inscricaoIds)
+              .limit(1000);
+            
+            console.log('📊 Query de validações executada');
+            console.log('  - Error:', validacoesError);
+            console.log('  - Data:', validacoesData);
+            console.log('  - Count:', validacoesData?.length || 0);
             
             if (!validacoesError) {
-              setPresentes(validacoesData?.length || 0);
+              const count = validacoesData?.length || 0;
+              console.log(`✅ Setando presentes para: ${count}`);
+              setPresentes(count);
+            } else {
+              console.error('❌ Erro ao buscar validações:', validacoesError);
             }
           }
         }
@@ -162,14 +174,26 @@ const AdminDashboard = () => {
         
         // Atualizar presenças
         const inscricaoIds = inscricoesData?.map(i => i.id) || [];
+        console.log('🔍 [UPDATE] Buscando validações para', inscricaoIds.length, 'inscrições');
+        
         const { data: validacoesData, error: validacoesError } = await supabase
           .from('deller_validacoes')
-          .select('id')
-          .in('inscricao_id', inscricaoIds);
+          .select('inscricao_id')
+          .in('inscricao_id', inscricaoIds)
+          .limit(1000);
+        
+        console.log('📊 [UPDATE] Query de validações executada');
+        console.log('  - Error:', validacoesError);
+        console.log('  - Data:', validacoesData);
+        console.log('  - Count:', validacoesData?.length || 0);
         
         if (!validacoesError) {
-          setPresentes(validacoesData?.length || 0);
-          console.log(`✅ ${validacoesData?.length || 0} presenças confirmadas`);
+          const count = validacoesData?.length || 0;
+          console.log(`✅ [UPDATE] Setando presentes para: ${count}`);
+          setPresentes(count);
+          console.log(`✅ ${count} presenças confirmadas`);
+        } else {
+          console.error('❌ [UPDATE] Erro ao buscar validações:', validacoesError);
         }
       } catch (error) {
         console.error('❌ Erro ao buscar dados:', error);

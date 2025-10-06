@@ -91,18 +91,26 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
       }
 
       // ✅ Verificar se já foi validado (buscar por inscricao_id)
+      console.log('🔍 Verificando se participante já foi validado...');
+      console.log('  - Inscrição ID:', inscricao.id);
+      console.log('  - Nome:', inscricao.nome_completo);
+      
       const { data: validacaoExistente, error: validacaoCheckError } = await supabase
         .from('deller_validacoes')
         .select('*')
         .eq('inscricao_id', inscricao.id)
         .maybeSingle();
 
+      console.log('📊 Resultado da verificação de duplicata:');
+      console.log('  - Error:', validacaoCheckError);
+      console.log('  - Data:', validacaoExistente);
+
       if (validacaoCheckError) {
-        console.error('Erro ao verificar validação:', validacaoCheckError);
+        console.error('❌ Erro ao verificar validação:', validacaoCheckError);
       }
 
       if (validacaoExistente) {
-        console.log('⚠️ Participante já validado anteriormente');
+        console.log('⚠️ DUPLICATA DETECTADA! Participante já validado anteriormente em:', validacaoExistente.validado_em);
         setValidationResult({
           success: false,
           message: 'Participante já teve presença confirmada.',
@@ -111,27 +119,38 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
         });
         toast({
           title: "Já validado",
-          description: `${inscricao.nome_completo} já teve presença confirmada.`,
+          description: `${inscricao.nome_completo} já teve presença confirmada em ${new Date(validacaoExistente.validado_em).toLocaleString('pt-BR')}.`,
           variant: "destructive",
         });
+        setIsValidating(false);
         return;
       }
+      
+      console.log('✅ Participante ainda não foi validado, prosseguindo...');
 
       // Registrar validação
-      const { error: validacaoError } = await supabase
+      console.log('💾 Inserindo nova validação no banco...');
+      const { error: validacaoError, data: novaValidacao } = await supabase
         .from('deller_validacoes')
         .insert({
           inscricao_id: inscricao.id,
           codigo_validacao: code,
           validado_por: 'Sistema',
           dispositivo_validacao: 'QR Code Scanner',
-        });
+        })
+        .select();
+
+      console.log('📊 Resultado da inserção:');
+      console.log('  - Error:', validacaoError);
+      console.log('  - Data:', novaValidacao);
 
       if (validacaoError) {
+        console.error('❌ Erro ao inserir validação:', validacaoError);
         throw validacaoError;
       }
 
-      console.log('🎯 Validação salva com sucesso, aguardando 500ms para garantir commit...');
+      console.log('🎯 Validação salva com sucesso! ID:', novaValidacao?.[0]?.id);
+      console.log('⏳ Aguardando 500ms para garantir commit no banco...');
       
       // Aguardar commit no banco antes de notificar
       await new Promise(resolve => setTimeout(resolve, 500));
