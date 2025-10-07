@@ -54,15 +54,19 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
   const validateCode = async (code: string) => {
     setIsValidating(true);
     
+    let inscricao: any = null;
+
+    // ETAPA 1: Buscar inscrição
     try {
-      // Buscar inscrição pelo código de validação
-      const { data: inscricao, error: inscricaoError } = await supabase
+      const { data, error } = await supabase
         .from('deller_inscricoes')
         .select('*')
         .eq('codigo_validacao', code)
-        .single();
+        .maybeSingle();
 
-      if (inscricaoError || !inscricao) {
+      if (error) throw error;
+
+      if (!data) {
         setValidationResult({
           success: false,
           message: 'Código de validação não encontrado.',
@@ -72,8 +76,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
           description: "Código de validação não encontrado.",
           variant: "destructive",
         });
+        setIsValidating(false);
         return;
       }
+
+      inscricao = data;
 
       // Verificar se o pagamento foi confirmado
       if (inscricao.status_pagamento !== 'pago') {
@@ -87,30 +94,35 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
           description: `${inscricao.nome_completo} ainda não teve o pagamento confirmado.`,
           variant: "destructive",
         });
+        setIsValidating(false);
         return;
       }
+    } catch (error) {
+      console.error('❌ Erro ao buscar inscrição:', error);
+      setValidationResult({
+        success: false,
+        message: 'Erro ao buscar código. Tente novamente.',
+      });
+      toast({
+        title: "Erro de conexão",
+        description: "Erro ao buscar código. Verifique sua conexão.",
+        variant: "destructive",
+      });
+      setIsValidating(false);
+      return;
+    }
 
-      // ✅ Verificar se já foi validado (buscar por inscricao_id)
-      console.log('🔍 Verificando se participante já foi validado...');
-      console.log('  - Inscrição ID:', inscricao.id);
-      console.log('  - Nome:', inscricao.nome_completo);
-      
-      const { data: validacaoExistente, error: validacaoCheckError } = await supabase
+    // ETAPA 2: Verificar duplicata
+    try {
+      const { data: validacaoExistente, error } = await supabase
         .from('deller_validacoes')
         .select('*')
         .eq('inscricao_id', inscricao.id)
         .maybeSingle();
 
-      console.log('📊 Resultado da verificação de duplicata:');
-      console.log('  - Error:', validacaoCheckError);
-      console.log('  - Data:', validacaoExistente);
-
-      if (validacaoCheckError) {
-        console.error('❌ Erro ao verificar validação:', validacaoCheckError);
-      }
+      if (error) throw error;
 
       if (validacaoExistente) {
-        console.log('⚠️ DUPLICATA DETECTADA! Participante já validado anteriormente em:', validacaoExistente.validado_em);
         setValidationResult({
           success: false,
           message: 'Participante já teve presença confirmada.',
@@ -125,12 +137,24 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
         setIsValidating(false);
         return;
       }
-      
-      console.log('✅ Participante ainda não foi validado, prosseguindo...');
+    } catch (error) {
+      console.error('❌ Erro ao verificar validação:', error);
+      setValidationResult({
+        success: false,
+        message: 'Erro ao verificar validação. Tente novamente.',
+      });
+      toast({
+        title: "Erro de verificação",
+        description: "Não foi possível verificar se já foi validado.",
+        variant: "destructive",
+      });
+      setIsValidating(false);
+      return;
+    }
 
-      // Registrar validação
-      console.log('💾 Inserindo nova validação no banco...');
-      const { error: validacaoError, data: novaValidacao } = await supabase
+    // ETAPA 3: Inserir validação
+    try {
+      const { error, data: novaValidacao } = await supabase
         .from('deller_validacoes')
         .insert({
           inscricao_id: inscricao.id,
@@ -140,22 +164,11 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
         })
         .select();
 
-      console.log('📊 Resultado da inserção:');
-      console.log('  - Error:', validacaoError);
-      console.log('  - Data:', novaValidacao);
+      if (error) throw error;
 
-      if (validacaoError) {
-        console.error('❌ Erro ao inserir validação:', validacaoError);
-        throw validacaoError;
-      }
-
-      console.log('🎯 Validação salva com sucesso! ID:', novaValidacao?.[0]?.id);
-      console.log('⏳ Aguardando 500ms para garantir commit no banco...');
-      
-      // Aguardar commit no banco antes de notificar
+      // Aguardar commit no banco
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('📢 Notificando dashboard para atualizar...');
       if (onValidationSuccess) {
         onValidationSuccess();
       }
@@ -172,20 +185,19 @@ const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ onValidationSuccess }) =>
         description: `Presença de ${inscricao.nome_completo} confirmada.`,
       });
 
-      // Vibração de feedback (se disponível)
+      // Vibração de feedback
       if (navigator.vibrate) {
         navigator.vibrate(200);
       }
-
     } catch (error) {
-      console.error('Erro ao validar código:', error);
+      console.error('❌ Erro ao salvar validação:', error);
       setValidationResult({
         success: false,
-        message: 'Erro ao validar código. Tente novamente.',
+        message: 'Erro ao salvar validação. Tente novamente.',
       });
       toast({
-        title: "Erro",
-        description: "Erro ao validar código. Tente novamente.",
+        title: "Erro ao salvar",
+        description: "Não foi possível registrar a presença. Tente novamente.",
         variant: "destructive",
       });
     } finally {
