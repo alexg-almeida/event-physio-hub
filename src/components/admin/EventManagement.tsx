@@ -1,0 +1,283 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { EventForm } from "./EventForm";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Edit, Power } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
+interface Evento {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  local: string;
+  data_evento: string;
+  vagas_totais: number;
+  vagas_ocupadas: number;
+  valor_inscricao: number;
+  status: string;
+}
+
+export function EventManagement() {
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
+  const [toggleEvento, setToggleEvento] = useState<Evento | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchEventos();
+  }, []);
+
+  const fetchEventos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("deller_eventos")
+        .select("*")
+        .order("data_evento", { ascending: false });
+
+      if (error) throw error;
+      setEventos(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar eventos",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateEvent = () => {
+    setEditingEvento(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleEditEvent = (evento: Evento) => {
+    setEditingEvento(evento);
+    setIsDialogOpen(true);
+  };
+
+  const handleToggleStatus = (evento: Evento) => {
+    setToggleEvento(evento);
+    setIsAlertOpen(true);
+  };
+
+  const confirmToggleStatus = async () => {
+    if (!toggleEvento) return;
+
+    try {
+      const newStatus = toggleEvento.status === "ativo" ? "inativo" : "ativo";
+      
+      const { error } = await supabase
+        .from("deller_eventos")
+        .update({ status: newStatus })
+        .eq("id", toggleEvento.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status atualizado",
+        description: `Evento ${newStatus === "ativo" ? "ativado" : "desativado"} com sucesso.`,
+      });
+
+      fetchEventos();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsAlertOpen(false);
+      setToggleEvento(null);
+    }
+  };
+
+  const handleSubmit = async (formData: any) => {
+    setSubmitting(true);
+    try {
+      if (editingEvento) {
+        const { error } = await supabase
+          .from("deller_eventos")
+          .update({
+            nome: formData.nome,
+            descricao: formData.descricao || null,
+            local: formData.local,
+            data_evento: format(formData.data_evento, "yyyy-MM-dd"),
+            vagas_totais: formData.vagas_totais,
+            valor_inscricao: formData.valor_inscricao,
+          })
+          .eq("id", editingEvento.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Evento atualizado",
+          description: "O evento foi atualizado com sucesso.",
+        });
+      } else {
+        const { error } = await supabase
+          .from("deller_eventos")
+          .insert({
+            nome: formData.nome,
+            descricao: formData.descricao || null,
+            local: formData.local,
+            data_evento: format(formData.data_evento, "yyyy-MM-dd"),
+            vagas_totais: formData.vagas_totais,
+            valor_inscricao: formData.valor_inscricao,
+            status: "ativo",
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: "Evento criado",
+          description: "O evento foi criado com sucesso.",
+        });
+      }
+
+      setIsDialogOpen(false);
+      fetchEventos();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar evento",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Carregando eventos...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Gestão de Eventos</h2>
+        <Button onClick={handleCreateEvent}>
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Evento
+        </Button>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead>Local</TableHead>
+              <TableHead>Vagas</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {eventos.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  Nenhum evento cadastrado
+                </TableCell>
+              </TableRow>
+            ) : (
+              eventos.map((evento) => (
+                <TableRow key={evento.id}>
+                  <TableCell className="font-medium">{evento.nome}</TableCell>
+                  <TableCell>
+                    {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+                  </TableCell>
+                  <TableCell>{evento.local}</TableCell>
+                  <TableCell>
+                    {evento.vagas_ocupadas}/{evento.vagas_totais}
+                  </TableCell>
+                  <TableCell>R$ {evento.valor_inscricao.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Badge variant={evento.status === "ativo" ? "default" : "secondary"}>
+                      {evento.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditEvent(evento)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleStatus(evento)}
+                      >
+                        <Power className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingEvento ? "Editar Evento" : "Novo Evento"}
+            </DialogTitle>
+          </DialogHeader>
+          <EventForm
+            initialData={
+              editingEvento
+                ? {
+                    nome: editingEvento.nome,
+                    descricao: editingEvento.descricao || "",
+                    local: editingEvento.local,
+                    data_evento: new Date(editingEvento.data_evento),
+                    vagas_totais: editingEvento.vagas_totais,
+                    valor_inscricao: editingEvento.valor_inscricao,
+                  }
+                : undefined
+            }
+            onSubmit={handleSubmit}
+            onCancel={() => setIsDialogOpen(false)}
+            isLoading={submitting}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar alteração de status</AlertDialogTitle>
+            <AlertDialogDescription>
+              {toggleEvento?.status === "ativo"
+                ? "Deseja desativar este evento? Ele não ficará mais visível para novas inscrições."
+                : "Deseja ativar este evento? Ele ficará disponível para novas inscrições."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmToggleStatus}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}

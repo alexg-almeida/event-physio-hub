@@ -23,6 +23,7 @@ import RegistrationDetailsModal from "./admin/RegistrationDetailsModal";
 import DataExporter from "./admin/DataExporter";
 import QRCodeGenerator from "./admin/QRCodeGenerator";
 import QRCodeScanner from "./admin/QRCodeScanner";
+import { EventManagement } from "./admin/EventManagement";
 
 interface Registration {
   id: string;
@@ -345,8 +346,9 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="inscricoes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="inscricoes">Inscrições</TabsTrigger>
+            <TabsTrigger value="eventos">Gestão de Eventos</TabsTrigger>
             <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
             <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
           </TabsList>
@@ -439,6 +441,14 @@ const AdminDashboard = () => {
                     ))
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="eventos">
+            <Card className="border-0 shadow-card-soft">
+              <CardContent className="pt-6">
+                <EventManagement />
               </CardContent>
             </Card>
           </TabsContent>
