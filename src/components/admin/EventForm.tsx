@@ -164,6 +164,11 @@ export function EventForm({ initialData, onSubmit, onCancel, isLoading }: EventF
                     {...field} 
                   />
                 </FormControl>
+                {form.watch("valor_inscricao") === 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    💡 Este evento será gratuito - inscrições serão confirmadas automaticamente
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )}

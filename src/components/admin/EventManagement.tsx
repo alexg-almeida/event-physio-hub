@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { EventForm } from "./EventForm";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Power, Trash2 } from "lucide-react";
+import { Plus, Edit, Power, Trash2, DollarSign, Gift } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -253,7 +253,16 @@ export function EventManagement() {
                   <TableCell>
                     {evento.vagas_ocupadas}/{evento.vagas_totais}
                   </TableCell>
-                  <TableCell>R$ {evento.valor_inscricao.toFixed(2)}</TableCell>
+                  <TableCell>
+                    {evento.valor_inscricao === 0 ? (
+                      <Badge variant="secondary" className="bg-primary/10 text-primary flex items-center gap-1 w-fit">
+                        <Gift className="w-3 h-3" />
+                        GRATUITO
+                      </Badge>
+                    ) : (
+                      <span>R$ {evento.valor_inscricao.toFixed(2)}</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={evento.status === "ativo" ? "default" : "secondary"}>
                       {evento.status}

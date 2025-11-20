@@ -15,7 +15,8 @@ import {
   Eye,
   ScanBarcode,
   DollarSign,
-  CheckSquare
+  CheckSquare,
+  Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +25,16 @@ import DataExporter from "./admin/DataExporter";
 import QRCodeGenerator from "./admin/QRCodeGenerator";
 import QRCodeScanner from "./admin/QRCodeScanner";
 import { EventManagement } from "./admin/EventManagement";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 
 interface Registration {
   id: string;
@@ -58,6 +69,7 @@ const AdminDashboard = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [selectedForBarcode, setSelectedForBarcode] = useState<Registration | null>(null);
+  const [deleteInscricao, setDeleteInscricao] = useState<Registration | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -248,6 +260,62 @@ const AdminDashboard = () => {
     setShowBarcodeModal(false);
     setSelectedForBarcode(null);
   };
+
+  const handleDeleteInscricao = (registration: Registration) => {
+    setDeleteInscricao(registration);
+  };
+
+  const confirmDeleteInscricao = async () => {
+    if (!deleteInscricao) return;
+    
+    try {
+      // 1. Verificar se tem validação
+      const { data: validacoes } = await supabase
+        .from('deller_validacoes')
+        .select('id')
+        .eq('inscricao_id', deleteInscricao.id);
+      
+      if (validacoes && validacoes.length > 0) {
+        toast({
+          title: "Não é possível excluir",
+          description: "Esta inscrição tem presença confirmada no evento.",
+          variant: "destructive"
+        });
+        setDeleteInscricao(null);
+        return;
+      }
+      
+      // 2. Deletar pagamentos associados
+      await supabase
+        .from('deller_pagamentos')
+        .delete()
+        .eq('inscricao_id', deleteInscricao.id);
+      
+      // 3. Deletar inscrição
+      const { error } = await supabase
+        .from('deller_inscricoes')
+        .delete()
+        .eq('id', deleteInscricao.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Inscrição excluída",
+        description: "A inscrição foi removida com sucesso."
+      });
+      
+      await handleUpdateRegistration();
+    } catch (error) {
+      console.error('Erro ao excluir inscrição:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a inscrição.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteInscricao(null);
+    }
+  };
   
   const filteredRegistrations = registrations.filter(reg => {
     const matchesSearch = reg.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -377,9 +445,13 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Receita Total</p>
-                  <p className="text-2xl font-bold text-primary">
-                    R$ {stats.receita.toFixed(2)}
-                  </p>
+                  {evento && evento.valor_inscricao === 0 ? (
+                    <p className="text-lg font-bold text-muted-foreground">Evento Gratuito</p>
+                  ) : (
+                    <p className="text-2xl font-bold text-primary">
+                      R$ {stats.receita.toFixed(2)}
+                    </p>
+                  )}
                 </div>
                 <DollarSign className="w-8 h-8 text-primary" />
               </div>
@@ -492,6 +564,14 @@ const AdminDashboard = () => {
                               QR Code
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteInscricao(registration)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     ))
@@ -555,6 +635,7 @@ const AdminDashboard = () => {
         isOpen={showDetailsModal}
         onClose={handleCloseDetailsModal}
         onUpdate={handleUpdateRegistration}
+        onDelete={() => selectedRegistration && handleDeleteInscricao(selectedRegistration)}
       />
 
       <QRCodeGenerator
@@ -562,6 +643,27 @@ const AdminDashboard = () => {
         onClose={handleCloseBarcodeModal}
         registration={selectedForBarcode}
       />
+
+      <AlertDialog open={deleteInscricao !== null} onOpenChange={(open) => !open && setDeleteInscricao(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a inscrição de <strong>{deleteInscricao?.nome_completo}</strong>?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteInscricao}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
