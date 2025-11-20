@@ -51,6 +51,8 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [evento, setEvento] = useState<Evento | null>(null);
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [selectedEventoFilter, setSelectedEventoFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -60,28 +62,32 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Buscar evento ativo
-        const { data: eventoData, error: eventoError } = await supabase
+        // Buscar todos os eventos
+        const { data: eventosData, error: eventosError } = await supabase
           .from('deller_eventos')
           .select('id, nome, valor_inscricao')
-          .eq('status', 'ativo')
-          .single();
+          .order('data_evento', { ascending: false });
 
-        if (eventoError) {
-          console.error('Erro ao buscar evento:', eventoError);
+        if (eventosError) {
+          console.error('Erro ao buscar eventos:', eventosError);
           toast({
             title: "Erro",
-            description: "Não foi possível carregar as informações do evento.",
+            description: "Não foi possível carregar as informações dos eventos.",
             variant: "destructive",
           });
         } else {
-          setEvento(eventoData);
+          setEventos(eventosData || []);
+          
+          // Buscar evento ativo para manter compatibilidade
+          const eventoAtivo = eventosData?.find(e => e.id === eventosData[0]?.id);
+          if (eventoAtivo) {
+            setEvento(eventoAtivo);
+          }
 
-          // Buscar inscrições do evento
+          // Buscar todas as inscrições
           const { data: inscricoesData, error: inscricoesError } = await supabase
             .from('deller_inscricoes')
             .select('*')
-            .eq('evento_id', eventoData.id)
             .order('created_at', { ascending: false });
 
           if (inscricoesError) {
@@ -127,6 +133,34 @@ const AdminDashboard = () => {
 
     fetchData();
   }, [toast]);
+
+  // Atualizar presenças quando o filtro de evento mudar
+  useEffect(() => {
+    const updatePresentes = async () => {
+      const filtered = selectedEventoFilter === "all" 
+        ? registrations 
+        : registrations.filter(r => r.evento_id === selectedEventoFilter);
+      
+      const inscricaoIds = filtered.map(i => i.id);
+      
+      if (inscricaoIds.length === 0) {
+        setPresentes(0);
+        return;
+      }
+      
+      const { data: validacoesData, error: validacoesError } = await supabase
+        .from('deller_validacoes')
+        .select('inscricao_id')
+        .in('inscricao_id', inscricaoIds)
+        .limit(1000);
+      
+      if (!validacoesError) {
+        setPresentes(validacoesData?.length || 0);
+      }
+    };
+    
+    updatePresentes();
+  }, [selectedEventoFilter, registrations]);
 
   const handleViewDetails = (registration: Registration) => {
     setSelectedRegistration(registration);
@@ -215,11 +249,13 @@ const AdminDashboard = () => {
     setSelectedForBarcode(null);
   };
   
-  const filteredRegistrations = registrations.filter(reg =>
-    reg.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reg.cpf.includes(searchTerm) ||
-    reg.telefone.includes(searchTerm)
-  );
+  const filteredRegistrations = registrations.filter(reg => {
+    const matchesSearch = reg.nome_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reg.cpf.includes(searchTerm) ||
+      reg.telefone.includes(searchTerm);
+    const matchesEvento = selectedEventoFilter === "all" || reg.evento_id === selectedEventoFilter;
+    return matchesSearch && matchesEvento;
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -238,16 +274,22 @@ const AdminDashboard = () => {
 
   const [presentes, setPresentes] = useState(0);
 
-  // ✅ Usar useMemo para recalcular stats quando registrations ou presentes mudarem
-  const stats = useMemo(() => ({
-    total: registrations.length,
-    pagos: registrations.filter(r => r.status_pagamento === "pago").length,
-    pendentes: registrations.filter(r => r.status_pagamento === "pendente").length,
-    presentes: presentes,
-    receita: registrations
-      .filter(r => r.status_pagamento === "pago")
-      .reduce((sum, r) => sum + (r.valor_pago || evento?.valor_inscricao || 0), 0)
-  }), [registrations, presentes, evento?.valor_inscricao]);
+  // ✅ Usar useMemo para recalcular stats quando registrations, presentes ou filtro mudarem
+  const stats = useMemo(() => {
+    const filtered = selectedEventoFilter === "all" 
+      ? registrations 
+      : registrations.filter(r => r.evento_id === selectedEventoFilter);
+    
+    return {
+      total: filtered.length,
+      pagos: filtered.filter(r => r.status_pagamento === "pago").length,
+      pendentes: filtered.filter(r => r.status_pagamento === "pendente").length,
+      presentes: presentes,
+      receita: filtered
+        .filter(r => r.status_pagamento === "pago")
+        .reduce((sum, r) => sum + (r.valor_pago || evento?.valor_inscricao || 0), 0)
+    };
+  }, [registrations, presentes, evento?.valor_inscricao, selectedEventoFilter]);
 
   if (loading) {
     return (
@@ -378,6 +420,20 @@ const AdminDashboard = () => {
                       Exportar
                     </Button>
                   </div>
+                </div>
+                <div className="mt-4">
+                  <select
+                    value={selectedEventoFilter}
+                    onChange={(e) => setSelectedEventoFilter(e.target.value)}
+                    className="w-full sm:w-[300px] h-10 px-3 py-2 text-sm bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="all">Todos os eventos</option>
+                    {eventos.map((evt) => (
+                      <option key={evt.id} value={evt.id}>
+                        {evt.nome}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </CardHeader>
               <CardContent>
