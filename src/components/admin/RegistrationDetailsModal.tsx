@@ -7,8 +7,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { ScanBarcode, Download, Edit, Save, X } from 'lucide-react';
+import { ScanBarcode, Download, Edit, Save, X, Trash2 } from 'lucide-react';
 import QRCodeGenerator from './QRCodeGenerator';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
 
 interface Registration {
   id: string;
@@ -31,18 +41,21 @@ interface RegistrationDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  onDelete?: () => void;
 }
 
 const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
   registration,
   isOpen,
   onClose,
-  onUpdate
+  onUpdate,
+  onDelete
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedStatus, setEditedStatus] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [showBarcode, setShowBarcode] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -87,6 +100,18 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
     }
   };
 
+  const handleDelete = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (onDelete) {
+      onDelete();
+      setShowDeleteDialog(false);
+      onClose();
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pago: { variant: 'default' as const, label: 'Pago' },
@@ -120,14 +145,27 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
                   </Button>
                 )}
                 {!isEditing ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                    {onDelete && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDelete}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir
+                      </Button>
+                    )}
+                  </>
                 ) : (
                   <div className="flex gap-2">
                     <Button
@@ -267,6 +305,26 @@ const RegistrationDetailsModal: React.FC<RegistrationDetailsModalProps> = ({
         onClose={() => setShowBarcode(false)}
         registration={registration}
       />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta inscrição? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
