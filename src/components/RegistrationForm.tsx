@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Heart, Users, Calendar, MapPin, Clock, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import Layout from "@/components/Layout";
 interface FormData {
   nomeCompleto: string;
   cpf: string;
@@ -197,149 +198,153 @@ const RegistrationForm = () => {
     }
   };
   if (loading) {
-    return <div className="min-h-screen bg-healing-gradient p-4 flex items-center justify-center">
+    return (
+      <Layout maxWidth="2xl" centered>
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Carregando informações do evento...</p>
         </div>
-      </div>;
+      </Layout>
+    );
   }
   if (!evento) {
-    return <div className="min-h-screen bg-healing-gradient p-4 flex items-center justify-center">
+    return (
+      <Layout maxWidth="2xl" centered>
         <Card className="max-w-md border-0 shadow-card-soft">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold mb-2">Evento não encontrado</h2>
             <p className="text-muted-foreground">Não há eventos ativos no momento.</p>
           </CardContent>
         </Card>
-      </div>;
+      </Layout>
+    );
   }
-  return <div className="min-h-screen bg-healing-gradient p-4">
-      <div className="mx-auto max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <Heart className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold text-foreground">{evento.nome}</h1>
-          </div>
-          
-          <div className="flex justify-center gap-4 mt-6 flex-wrap">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              {new Date(evento.data_evento).toLocaleDateString('pt-BR')}
-            </Badge>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              Local a Definir
-            </Badge>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <DollarSign className="w-4 h-4" />
-              R$ {evento.valor_inscricao.toFixed(2)}
-            </Badge>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {evento.vagas_ocupadas}/{evento.vagas_totais} vagas
-            </Badge>
-          </div>
+  return (
+    <Layout maxWidth="2xl">
+      {/* Header */}
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-2 mb-4">
+          <Heart className="w-8 h-8 text-primary" />
+          <h1 className="text-3xl font-bold text-foreground">{evento.nome}</h1>
         </div>
-
-        {/* Progress */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">
-              Etapa {currentStep} de 2
-            </span>
-            
-          </div>
-          <div className="w-full bg-secondary rounded-full h-2">
-            <div className="bg-medical-gradient h-2 rounded-full transition-all duration-300" style={{
-            width: `${currentStep / 2 * 100}%`
-          }} />
-          </div>
+        
+        <div className="flex justify-center gap-4 mt-6 flex-wrap">
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            {new Date(evento.data_evento).toLocaleDateString('pt-BR')}
+          </Badge>
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <MapPin className="w-4 h-4" />
+            Local a Definir
+          </Badge>
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <DollarSign className="w-4 h-4" />
+            R$ {evento.valor_inscricao.toFixed(2)}
+          </Badge>
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Users className="w-4 h-4" />
+            {evento.vagas_ocupadas}/{evento.vagas_totais} vagas
+          </Badge>
         </div>
-
-        <Card className="shadow-card-soft border-0">
-          <CardHeader>
-            <CardTitle className="text-xl">
-              {currentStep === 1 ? "Dados Pessoais" : "Informações de Saúde"}
-            </CardTitle>
-            <CardDescription>
-              {currentStep === 1 ? "Preencha suas informações básicas para a inscrição" : "Nos conte sobre seu histórico de saúde para um atendimento personalizado"}
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            {currentStep === 1 ? <>
-                <div className="space-y-2">
-                  <Label htmlFor="nome">Nome Completo *</Label>
-                  <Input id="nome" placeholder="Digite seu nome completo" value={formData.nomeCompleto} onChange={e => handleInputChange("nomeCompleto", e.target.value)} className="border-border focus:border-primary transition-colors" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="cpf">CPF *</Label>
-                  <Input id="cpf" placeholder="000.000.000-00" value={formData.cpf} onChange={e => handleCPFChange(e.target.value)} className="border-border focus:border-primary transition-colors" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="endereco">Endereço Completo *</Label>
-                  <Input id="endereco" placeholder="Rua, número, bairro, cidade, CEP" value={formData.endereco} onChange={e => handleInputChange("endereco", e.target.value)} className="border-border focus:border-primary transition-colors" />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="telefone">Telefone *</Label>
-                  <Input id="telefone" placeholder="(00) 00000-0000" value={formData.telefone} onChange={e => handlePhoneChange(e.target.value)} className="border-border focus:border-primary transition-colors" />
-                </div>
-
-                <Button onClick={handleNextStep} className="w-full bg-medical-gradient hover:opacity-90 transition-all" size="lg">
-                  Próxima Etapa
-                </Button>
-              </> : <>
-                <div className="space-y-3">
-                  <Label>Tem ou teve alguma lesão? *</Label>
-                  <RadioGroup value={formData.temLesao === null ? "" : formData.temLesao ? "sim" : "nao"} onValueChange={value => {
-                const temLesao = value === "sim";
-                setFormData(prev => ({
-                  ...prev,
-                  temLesao,
-                  lesoes: temLesao ? prev.lesoes : "",
-                  tratamento: temLesao ? prev.tratamento : ""
-                }));
-              }} className="flex gap-6">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="sim" id="sim" />
-                      <Label htmlFor="sim">Sim</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="nao" id="nao" />
-                      <Label htmlFor="nao">Não</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {formData.temLesao && <>
-                    <div className="space-y-2">
-                      <Label htmlFor="lesoes">Descreva suas lesões *</Label>
-                      <Textarea id="lesoes" placeholder="Descreva suas lesões atuais ou passadas" value={formData.lesoes} onChange={e => handleInputChange("lesoes", e.target.value)} rows={3} className="border-border focus:border-primary transition-colors resize-none" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="tratamento">Está em tratamento ou já tratou? *</Label>
-                      <Textarea id="tratamento" placeholder="Conte sobre tratamentos fisioterapêuticos atuais ou anteriores" value={formData.tratamento} onChange={e => handleInputChange("tratamento", e.target.value)} rows={3} className="border-border focus:border-primary transition-colors resize-none" />
-                    </div>
-                  </>}
-
-                <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setCurrentStep(1)} className="flex-1">
-                    Voltar
-                  </Button>
-                  <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 bg-medical-gradient hover:opacity-90 transition-all" size="lg">
-                    {isSubmitting ? "Processando..." : "Finalizar Inscrição"}
-                  </Button>
-                </div>
-              </>}
-          </CardContent>
-        </Card>
       </div>
-    </div>;
+
+      {/* Progress */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-foreground">
+            Etapa {currentStep} de 2
+          </span>
+          
+        </div>
+        <div className="w-full bg-secondary rounded-full h-2">
+          <div className="bg-medical-gradient h-2 rounded-full transition-all duration-300" style={{
+          width: `${currentStep / 2 * 100}%`
+        }} />
+        </div>
+      </div>
+
+      <Card className="shadow-card-soft border-0">
+        <CardHeader>
+          <CardTitle className="text-xl">
+            {currentStep === 1 ? "Dados Pessoais" : "Informações de Saúde"}
+          </CardTitle>
+          <CardDescription>
+            {currentStep === 1 ? "Preencha suas informações básicas para a inscrição" : "Nos conte sobre seu histórico de saúde para um atendimento personalizado"}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          {currentStep === 1 ? <>
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome Completo *</Label>
+                <Input id="nome" placeholder="Digite seu nome completo" value={formData.nomeCompleto} onChange={e => handleInputChange("nomeCompleto", e.target.value)} className="border-border focus:border-primary transition-colors" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF *</Label>
+                <Input id="cpf" placeholder="000.000.000-00" value={formData.cpf} onChange={e => handleCPFChange(e.target.value)} className="border-border focus:border-primary transition-colors" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="endereco">Endereço Completo *</Label>
+                <Input id="endereco" placeholder="Rua, número, bairro, cidade, CEP" value={formData.endereco} onChange={e => handleInputChange("endereco", e.target.value)} className="border-border focus:border-primary transition-colors" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="telefone">Telefone *</Label>
+                <Input id="telefone" placeholder="(00) 00000-0000" value={formData.telefone} onChange={e => handlePhoneChange(e.target.value)} className="border-border focus:border-primary transition-colors" />
+              </div>
+
+              <Button onClick={handleNextStep} className="w-full bg-medical-gradient hover:opacity-90 transition-all" size="lg">
+                Próxima Etapa
+              </Button>
+            </> : <>
+              <div className="space-y-3">
+                <Label>Tem ou teve alguma lesão? *</Label>
+                <RadioGroup value={formData.temLesao === null ? "" : formData.temLesao ? "sim" : "nao"} onValueChange={value => {
+              const temLesao = value === "sim";
+              setFormData(prev => ({
+                ...prev,
+                temLesao,
+                lesoes: temLesao ? prev.lesoes : "",
+                tratamento: temLesao ? prev.tratamento : ""
+              }));
+            }} className="flex gap-6">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="sim" id="sim" />
+                    <Label htmlFor="sim">Sim</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="nao" id="nao" />
+                    <Label htmlFor="nao">Não</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {formData.temLesao && <>
+                  <div className="space-y-2">
+                    <Label htmlFor="lesoes">Descreva suas lesões *</Label>
+                    <Textarea id="lesoes" placeholder="Descreva suas lesões atuais ou passadas" value={formData.lesoes} onChange={e => handleInputChange("lesoes", e.target.value)} rows={3} className="border-border focus:border-primary transition-colors resize-none" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="tratamento">Está em tratamento ou já tratou? *</Label>
+                    <Textarea id="tratamento" placeholder="Conte sobre tratamentos fisioterapêuticos atuais ou anteriores" value={formData.tratamento} onChange={e => handleInputChange("tratamento", e.target.value)} rows={3} className="border-border focus:border-primary transition-colors resize-none" />
+                  </div>
+                </>}
+
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setCurrentStep(1)} className="flex-1">
+                  Voltar
+                </Button>
+                <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 bg-medical-gradient hover:opacity-90 transition-all" size="lg">
+                  {isSubmitting ? "Processando..." : "Finalizar Inscrição"}
+                </Button>
+              </div>
+            </>}
+        </CardContent>
+      </Card>
+    </Layout>
+  );
 };
 export default RegistrationForm;

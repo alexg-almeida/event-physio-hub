@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { EventForm } from "./EventForm";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Power } from "lucide-react";
+import { Plus, Edit, Power, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -28,8 +29,10 @@ export function EventManagement() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [toggleEvento, setToggleEvento] = useState<Evento | null>(null);
+  const [deleteEvento, setDeleteEvento] = useState<Evento | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -100,6 +103,52 @@ export function EventManagement() {
     } finally {
       setIsAlertOpen(false);
       setToggleEvento(null);
+    }
+  };
+
+  const handleDeleteEvent = (evento: Evento) => {
+    setDeleteEvento(evento);
+    setIsDeleteAlertOpen(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    if (!deleteEvento) return;
+
+    // Verificar se o evento tem inscrições
+    if (deleteEvento.vagas_ocupadas > 0) {
+      toast({
+        title: "Não é possível excluir",
+        description: "Este evento possui inscrições vinculadas e não pode ser excluído.",
+        variant: "destructive",
+      });
+      setIsDeleteAlertOpen(false);
+      setDeleteEvento(null);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("deller_eventos")
+        .delete()
+        .eq("id", deleteEvento.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Evento excluído",
+        description: "O evento foi excluído com sucesso.",
+      });
+
+      fetchEventos();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir evento",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteAlertOpen(false);
+      setDeleteEvento(null);
     }
   };
 
@@ -211,22 +260,51 @@ export function EventManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditEvent(evento)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleStatus(evento)}
-                      >
-                        <Power className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <TooltipProvider>
+                      <div className="flex justify-end gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditEvent(evento)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Editar evento</TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleStatus(evento)}
+                            >
+                              <Power className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {evento.status === "ativo" ? "Desativar" : "Ativar"} evento
+                          </TooltipContent>
+                        </Tooltip>
+                        
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteEvent(evento)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Excluir evento</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TooltipProvider>
                   </TableCell>
                 </TableRow>
               ))
@@ -275,6 +353,29 @@ export function EventManagement() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmToggleStatus}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o evento "{deleteEvento?.nome}"? 
+              {deleteEvento?.vagas_ocupadas && deleteEvento.vagas_ocupadas > 0 
+                ? " Este evento possui inscrições vinculadas e não pode ser excluído."
+                : " Esta ação não pode ser desfeita."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteEvent}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
