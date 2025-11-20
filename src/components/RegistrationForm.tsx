@@ -226,7 +226,7 @@ const RegistrationForm = () => {
 
   if (loading) {
     return (
-      <Layout maxWidth="2xl" centered>
+      <Layout maxWidth="7xl" centered>
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Carregando informações do evento...</p>
@@ -237,7 +237,7 @@ const RegistrationForm = () => {
 
   if (!evento) {
     return (
-      <Layout maxWidth="2xl" centered>
+      <Layout maxWidth="7xl" centered>
         <Card className="max-w-md border-0 shadow-card-soft">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold mb-2">Evento não encontrado</h2>
@@ -249,7 +249,7 @@ const RegistrationForm = () => {
   }
 
   return (
-    <Layout maxWidth="2xl">
+    <Layout maxWidth="7xl">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-4">
           {evento.nome}
@@ -291,7 +291,7 @@ const RegistrationForm = () => {
         </div>
         <div className="w-full bg-secondary rounded-full h-2">
           <div
-            className="bg-medical-gradient h-2 rounded-full transition-all duration-300"
+            className="bg-primary h-2 rounded-full transition-all duration-300"
             style={{ width: `${(currentStep / 2) * 100}%` }}
           />
         </div>
@@ -358,7 +358,7 @@ const RegistrationForm = () => {
 
               <Button
                 onClick={handleNextStep}
-                className="w-full bg-medical-gradient hover:opacity-90 transition-all"
+                className="w-full"
                 size="lg"
               >
                 Próxima Etapa
@@ -427,7 +427,7 @@ const RegistrationForm = () => {
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex-1 bg-medical-gradient hover:opacity-90 transition-all"
+                  className="flex-1"
                   size="lg"
                 >
                   {isSubmitting ? "Processando..." : "Finalizar Inscrição"}
