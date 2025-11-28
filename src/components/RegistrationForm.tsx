@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { Users, Calendar, MapPin, Clock, DollarSign, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
+import QRCode from "qrcode";
 
 interface FormData {
   nomeCompleto: string;
@@ -33,6 +35,7 @@ interface Evento {
 }
 
 const RegistrationForm = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     nomeCompleto: "",
     cpf: "",
@@ -192,15 +195,29 @@ const RegistrationForm = () => {
         return;
       }
 
-      const mensagem = isEventoGratuito
-        ? `Inscrição confirmada! Código: ${data.codigo_validacao}`
-        : `Código de validação: ${data.codigo_validacao}. Aguarde as informações de pagamento.`;
-
-      toast({
-        title: "Inscrição realizada com sucesso!",
-        description: mensagem,
+      // Gerar QR Code
+      const qrCodeDataUrl = await QRCode.toDataURL(data.codigo_validacao, {
+        width: 512,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
       });
 
+      // Atualizar inscrição com QR Code
+      const { error: updateError } = await supabase
+        .from('deller_inscricoes')
+        .update({ qr_code_data: qrCodeDataUrl })
+        .eq('id', data.id);
+
+      if (updateError) {
+        console.error('Erro ao salvar QR Code:', updateError);
+      }
+
+      // Redirecionar para tela de confirmação
+      navigate(`/confirmacao?id=${data.id}`);
+      
       // Reset form
       setFormData({
         nomeCompleto: "",
