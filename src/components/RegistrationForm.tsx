@@ -36,8 +36,8 @@ interface Evento {
 }
 
 function formatEventDateDisplay(dataEvento: string, dataEventoFim: string | null): string {
-  const start = new Date(dataEvento);
-  const end = dataEventoFim ? new Date(dataEventoFim) : null;
+  const start = new Date(dataEvento + 'T12:00:00');
+  const end = dataEventoFim ? new Date(dataEventoFim + 'T12:00:00') : null;
   
   const isSameDay = (d1: Date, d2: Date) => 
     d1.getFullYear() === d2.getFullYear() &&

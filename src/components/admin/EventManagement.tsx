@@ -26,8 +26,8 @@ interface Evento {
 }
 
 function formatEventDate(dataEvento: string, dataEventoFim: string | null): string {
-  const start = new Date(dataEvento);
-  const end = dataEventoFim ? new Date(dataEventoFim) : null;
+  const start = new Date(dataEvento + 'T12:00:00');
+  const end = dataEventoFim ? new Date(dataEventoFim + 'T12:00:00') : null;
   
   if (!end || isSameDay(start, end)) {
     return format(start, "dd/MM/yyyy", { locale: ptBR });
@@ -362,9 +362,9 @@ export function EventManagement() {
                     nome: editingEvento.nome,
                     descricao: editingEvento.descricao || "",
                     local: editingEvento.local,
-                    data_evento: new Date(editingEvento.data_evento),
+                    data_evento: new Date(editingEvento.data_evento + 'T12:00:00'),
                     data_evento_fim: editingEvento.data_evento_fim 
-                      ? new Date(editingEvento.data_evento_fim) 
+                      ? new Date(editingEvento.data_evento_fim + 'T12:00:00') 
                       : null,
                     vagas_totais: editingEvento.vagas_totais,
                     valor_inscricao: editingEvento.valor_inscricao,
