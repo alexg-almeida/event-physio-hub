@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           data_evento: string
+          data_evento_fim: string | null
           descricao: string | null
           id: string
           local: string
@@ -31,6 +32,7 @@ export type Database = {
         Insert: {
           created_at?: string
           data_evento: string
+          data_evento_fim?: string | null
           descricao?: string | null
           id?: string
           local: string
@@ -44,6 +46,7 @@ export type Database = {
         Update: {
           created_at?: string
           data_evento?: string
+          data_evento_fim?: string | null
           descricao?: string | null
           id?: string
           local?: string
