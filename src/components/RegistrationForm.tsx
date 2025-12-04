@@ -28,10 +28,36 @@ interface Evento {
   nome: string;
   descricao: string;
   data_evento: string;
+  data_evento_fim: string | null;
   local: string;
   valor_inscricao: number;
   vagas_totais: number;
   vagas_ocupadas: number;
+}
+
+function formatEventDateDisplay(dataEvento: string, dataEventoFim: string | null): string {
+  const start = new Date(dataEvento);
+  const end = dataEventoFim ? new Date(dataEventoFim) : null;
+  
+  const isSameDay = (d1: Date, d2: Date) => 
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+  
+  if (!end || isSameDay(start, end)) {
+    return start.toLocaleDateString('pt-BR');
+  }
+  
+  const startMonth = start.getMonth();
+  const endMonth = end.getMonth();
+  const startYear = start.getFullYear();
+  const endYear = end.getFullYear();
+  
+  if (startMonth === endMonth && startYear === endYear) {
+    return `${start.getDate().toString().padStart(2, '0')} - ${end.toLocaleDateString('pt-BR')}`;
+  }
+  
+  return `${start.toLocaleDateString('pt-BR')} - ${end.toLocaleDateString('pt-BR')}`;
 }
 
 const RegistrationForm = () => {
@@ -275,7 +301,7 @@ const RegistrationForm = () => {
         <div className="flex justify-center gap-4 mt-6 flex-wrap">
           <Badge variant="secondary" className="flex items-center gap-1">
             <Calendar className="w-4 h-4" />
-            {new Date(evento.data_evento).toLocaleDateString('pt-BR')}
+            {formatEventDateDisplay(evento.data_evento, evento.data_evento_fim)}
           </Badge>
           <Badge variant="secondary" className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />

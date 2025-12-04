@@ -8,16 +8,20 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
 
 const eventFormSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório").max(100, "Nome deve ter no máximo 100 caracteres"),
   descricao: z.string().optional(),
   local: z.string().min(1, "Local é obrigatório").max(200, "Local deve ter no máximo 200 caracteres"),
-  data_evento: z.date({
-    required_error: "Data do evento é obrigatória",
+  dateRange: z.object({
+    from: z.date({
+      required_error: "Data de início é obrigatória",
+    }),
+    to: z.date().optional(),
   }),
   vagas_totais: z.coerce.number().min(1, "Deve haver pelo menos 1 vaga"),
   valor_inscricao: z.coerce.number().min(0, "Valor deve ser maior ou igual a zero"),
@@ -26,22 +30,57 @@ const eventFormSchema = z.object({
 type EventFormValues = z.infer<typeof eventFormSchema>;
 
 interface EventFormProps {
-  initialData?: Partial<EventFormValues>;
+  initialData?: {
+    nome: string;
+    descricao?: string;
+    local: string;
+    data_evento: Date;
+    data_evento_fim?: Date | null;
+    vagas_totais: number;
+    valor_inscricao: number;
+  };
   onSubmit: (data: EventFormValues) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
 
+function formatDateRange(from: Date, to?: Date | null): string {
+  if (!to || isSameDay(from, to)) {
+    return format(from, "PPP", { locale: ptBR });
+  }
+  
+  const fromMonth = format(from, "MM/yyyy");
+  const toMonth = format(to, "MM/yyyy");
+  
+  if (fromMonth === toMonth) {
+    return `${format(from, "dd")} - ${format(to, "dd/MM/yyyy")}`;
+  }
+  
+  return `${format(from, "dd/MM/yyyy")} - ${format(to, "dd/MM/yyyy")}`;
+}
+
 export function EventForm({ initialData, onSubmit, onCancel, isLoading }: EventFormProps) {
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
-    defaultValues: initialData || {
-      nome: "",
-      descricao: "",
-      local: "",
-      vagas_totais: 0,
-      valor_inscricao: 0,
-    },
+    defaultValues: initialData 
+      ? {
+          nome: initialData.nome,
+          descricao: initialData.descricao || "",
+          local: initialData.local,
+          dateRange: {
+            from: initialData.data_evento,
+            to: initialData.data_evento_fim || initialData.data_evento,
+          },
+          vagas_totais: initialData.vagas_totais,
+          valor_inscricao: initialData.valor_inscricao,
+        }
+      : {
+          nome: "",
+          descricao: "",
+          local: "",
+          vagas_totais: 0,
+          valor_inscricao: 0,
+        },
   });
 
   return (
@@ -95,7 +134,7 @@ export function EventForm({ initialData, onSubmit, onCancel, isLoading }: EventF
 
         <FormField
           control={form.control}
-          name="data_evento"
+          name="dateRange"
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Data do Evento</FormLabel>
@@ -106,13 +145,13 @@ export function EventForm({ initialData, onSubmit, onCancel, isLoading }: EventF
                       variant="outline"
                       className={cn(
                         "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground"
+                        !field.value?.from && "text-muted-foreground"
                       )}
                     >
-                      {field.value ? (
-                        format(field.value, "PPP", { locale: ptBR })
+                      {field.value?.from ? (
+                        formatDateRange(field.value.from, field.value.to)
                       ) : (
-                        <span>Selecione a data</span>
+                        <span>Selecione a data ou período</span>
                       )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
@@ -120,15 +159,24 @@ export function EventForm({ initialData, onSubmit, onCancel, isLoading }: EventF
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date < new Date()}
+                    mode="range"
+                    selected={field.value as DateRange}
+                    onSelect={(range) => {
+                      field.onChange({
+                        from: range?.from,
+                        to: range?.to || range?.from,
+                      });
+                    }}
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                     initialFocus
                     className="pointer-events-auto"
+                    numberOfMonths={2}
                   />
                 </PopoverContent>
               </Popover>
+              <p className="text-sm text-muted-foreground">
+                Selecione um dia para evento único ou arraste para selecionar um período
+              </p>
               <FormMessage />
             </FormItem>
           )}

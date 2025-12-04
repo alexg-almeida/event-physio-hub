@@ -8,7 +8,7 @@ import { EventForm } from "./EventForm";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Power, Trash2, DollarSign, Gift } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
@@ -18,10 +18,29 @@ interface Evento {
   descricao: string | null;
   local: string;
   data_evento: string;
+  data_evento_fim: string | null;
   vagas_totais: number;
   vagas_ocupadas: number;
   valor_inscricao: number;
   status: string;
+}
+
+function formatEventDate(dataEvento: string, dataEventoFim: string | null): string {
+  const start = new Date(dataEvento);
+  const end = dataEventoFim ? new Date(dataEventoFim) : null;
+  
+  if (!end || isSameDay(start, end)) {
+    return format(start, "dd/MM/yyyy", { locale: ptBR });
+  }
+  
+  const startMonth = format(start, "MM/yyyy");
+  const endMonth = format(end, "MM/yyyy");
+  
+  if (startMonth === endMonth) {
+    return `${format(start, "dd")} - ${format(end, "dd/MM/yyyy")}`;
+  }
+  
+  return `${format(start, "dd/MM/yyyy")} - ${format(end, "dd/MM/yyyy")}`;
 }
 
 export function EventManagement() {
@@ -155,6 +174,11 @@ export function EventManagement() {
   const handleSubmit = async (formData: any) => {
     setSubmitting(true);
     try {
+      const dataEvento = format(formData.dateRange.from, "yyyy-MM-dd");
+      const dataEventoFim = formData.dateRange.to 
+        ? format(formData.dateRange.to, "yyyy-MM-dd") 
+        : dataEvento;
+
       if (editingEvento) {
         const { error } = await supabase
           .from("deller_eventos")
@@ -162,7 +186,8 @@ export function EventManagement() {
             nome: formData.nome,
             descricao: formData.descricao || null,
             local: formData.local,
-            data_evento: format(formData.data_evento, "yyyy-MM-dd"),
+            data_evento: dataEvento,
+            data_evento_fim: dataEventoFim,
             vagas_totais: formData.vagas_totais,
             valor_inscricao: formData.valor_inscricao,
           })
@@ -181,7 +206,8 @@ export function EventManagement() {
             nome: formData.nome,
             descricao: formData.descricao || null,
             local: formData.local,
-            data_evento: format(formData.data_evento, "yyyy-MM-dd"),
+            data_evento: dataEvento,
+            data_evento_fim: dataEventoFim,
             vagas_totais: formData.vagas_totais,
             valor_inscricao: formData.valor_inscricao,
             status: "ativo",
@@ -247,7 +273,7 @@ export function EventManagement() {
                 <TableRow key={evento.id}>
                   <TableCell className="font-medium">{evento.nome}</TableCell>
                   <TableCell>
-                    {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+                    {formatEventDate(evento.data_evento, evento.data_evento_fim)}
                   </TableCell>
                   <TableCell>{evento.local}</TableCell>
                   <TableCell>
@@ -337,6 +363,9 @@ export function EventManagement() {
                     descricao: editingEvento.descricao || "",
                     local: editingEvento.local,
                     data_evento: new Date(editingEvento.data_evento),
+                    data_evento_fim: editingEvento.data_evento_fim 
+                      ? new Date(editingEvento.data_evento_fim) 
+                      : null,
                     vagas_totais: editingEvento.vagas_totais,
                     valor_inscricao: editingEvento.valor_inscricao,
                   }
