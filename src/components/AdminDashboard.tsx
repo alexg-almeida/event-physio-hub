@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,10 +17,12 @@ import {
   ScanBarcode,
   DollarSign,
   CheckSquare,
-  Trash2
+  Trash2,
+  LogOut
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import RegistrationDetailsModal from "./admin/RegistrationDetailsModal";
 import DataExporter from "./admin/DataExporter";
 import QRCodeGenerator from "./admin/QRCodeGenerator";
@@ -59,6 +62,8 @@ interface Evento {
 
 const AdminDashboard = () => {
   const { toast } = useToast();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [evento, setEvento] = useState<Evento | null>(null);
@@ -373,13 +378,25 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-healing-gradient p-4">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Painel Administrativo
-          </h1>
-          <p className="text-muted-foreground">
-            Gerenciador de Inscrições
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Painel Administrativo
+            </h1>
+            <p className="text-muted-foreground">
+              Gerenciador de Inscrições
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={async () => {
+              await signOut();
+              navigate('/auth');
+            }}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair
+          </Button>
         </div>
 
         {/* QR Code Scanner na Home */}
